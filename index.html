@@ -1,131 +1,68 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Doge Village - Crypto Idle Game</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-
-    body {
-      background: linear-gradient(180deg, #70c5ce 0%, #a2e2b7 100%);
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
-    }
-
-    .game-card {
-      background: #ffffff;
-      border-radius: 24px;
-      padding: 28px;
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-      text-align: center;
-      border: 4px solid #f7b731;
+position: relative;
     }
 
     .header-title {
       font-size: 28px;
       color: #e1b12c;
       font-weight: 800;
-      margin-bottom: 5px;
+      margin-bottom: 2px;
       text-shadow: 1px 1px 0px #000;
     }
 
     .subtitle {
       font-size: 13px;
       color: #7f8c8d;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
 
-    .village-scene {
-      background: #eccc68;
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-      position: relative;
-      border: 3px dashed #ffa502;
-    }
-
-    .doge-avatar {
-      font-size: 70px;
-      cursor: pointer;
-      user-select: none;
-      transition: transform 0.1s ease;
+    .level-badge {
       display: inline-block;
-    }
-
-    .doge-avatar:active {
-      transform: scale(1.2) rotate(5deg);
-    }
-
-    .stats-container {
-      background: #f1f2f6;
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 20px;
-    }
-
-    .balance-title {
+      background: #ff4757;
+      color: #fff;
       font-size: 12px;
-      color: #747d8c;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .balance-amount {
-      font-size: 32px;
       font-weight: 800;
-      color: #2ed573;
-      margin: 4px 0;
+      padding: 4px 12px;
+      border-radius: 20px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+    /* Modal Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
     }
 
-    .btn {
-      width: 100%;
-      padding: 14px;
-      font-size: 16px;
-      font-weight: 700;
-      border: none;
-      border-radius: 12px;
-      cursor: pointer;
+    .modal-content {
+      background: #fff;
+      border-radius: 20px;
+      padding: 25px;
+      width: 90%;
+      max-width: 350px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .modal-content h3 {
       margin-bottom: 10px;
-      transition: all 0.2s ease;
-      box-shadow: 0 4px 0px rgba(0,0,0,0.2);
-    }
-
-    .btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0px rgba(0,0,0,0.2);
-    }
-
-    .btn-mine {
-      background: #ffa502;
-      color: #fff;
-    }
-
-    .btn-mine:disabled {
-      background: #ccc;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-
-    .btn-withdraw {
-      background: #2ed573;
-      color: #fff;
-    }
-
-    .toast {
-      font-size: 13px;
       color: #2f3542;
-      height: 20px;
+    }
+
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 12px 0;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+    }
+
+    .btn-close {
+      background: #ff4757;
+      color: #fff;
       margin-top: 5px;
     }
   </style>
@@ -135,6 +72,7 @@
   <div class="game-card">
     <h1 class="header-title">🐕 Doge Village</h1>
     <p class="subtitle">Tap the Doge to mine DOGE crypto!</p>
+    <div id="levelBadge" class="level-badge">🏠 Village Level 1</div>
 
     <div class="village-scene">
       <div id="doge" class="doge-avatar" onclick="mineDoge()">🐶</div>
@@ -147,32 +85,61 @@
     </div>
 
     <button id="mineBtn" class="btn btn-mine" onclick="mineDoge()">⛏️ Mine (Earn 0.02 DOGE)</button>
-    <button class="btn btn-withdraw" onclick="withdraw()">💸 Withdraw to FaucetPay</button>
+    <button class="btn btn-withdraw" onclick="openWithdrawModal()">💸 Withdraw to FaucetPay</button>
 
     <div id="toast" class="toast"></div>
   </div>
 
+  <!-- Withdraw Modal -->
+  <div id="withdrawModal" class="modal">
+    <div class="modal-content">
+      <h3>💸 FaucetPay Payout</h3>
+      <p style="font-size: 12px; color: #777;">Enter your registered FaucetPay Email address.</p>
+      <input type="email" id="faucetEmail" placeholder="example@gmail.com" />
+      <button class="btn btn-withdraw" onclick="processWithdrawal()">Submit Payout Request</button>
+      <button class="btn btn-close" onclick="closeWithdrawModal()">Cancel</button>
+    </div>
+  </div>
+
   <script>
     let balance = parseFloat(localStorage.getItem('doge_balance')) || 0.0000;
+    let clicks = parseInt(localStorage.getItem('doge_clicks')) || 0;
+    let level = parseInt(localStorage.getItem('doge_level')) || 1;
     let isCooldown = false;
 
-    document.getElementById('balance').innerText = balance.toFixed(4);
+    updateUI();
+
+    function updateUI() {
+      document.getElementById('balance').innerText = balance.toFixed(4);
+      document.getElementById('levelBadge').innerText = `🏠 Village Level ${level}`;
+    }
 
     function mineDoge() {
       if (isCooldown) return;
 
       balance += 0.0200;
+      clicks++;
+
+      // Level up logic (Every 5 clicks increases level)
+      if (clicks % 5 === 0) {
+        level++;
+        showToast(`🎉 Level Up! You reached Level ${level}!`);
+      } else {
+        showToast("+0.02 DOGE Mined!");
+      }
+
       localStorage.setItem('doge_balance', balance);
-      document.getElementById('balance').innerText = balance.toFixed(4);
+      localStorage.setItem('doge_clicks', clicks);
+      localStorage.setItem('doge_level', level);
 
-      showToast("+0.02 DOGE Mined!");
+      updateUI();
 
-      // Doge bounce animation
+      // Doge animation
       const doge = document.getElementById('doge');
       doge.style.transform = 'scale(1.3)';
       setTimeout(() => doge.style.transform = 'scale(1)', 150);
 
-      // Cooldown timer (3 seconds)
+      // Cooldown timer
       isCooldown = true;
       const btn = document.getElementById('mineBtn');
       btn.disabled = true;
@@ -190,11 +157,29 @@
       }, 1000);
     }
 
-    function withdraw() {
+    function openWithdrawModal() {
+      document.getElementById('withdrawModal').style.display = 'flex';
+    }
+
+    function closeWithdrawModal() {
+      document.getElementById('withdrawModal').style.display = 'none';
+    }
+
+    function processWithdrawal() {
+      const email = document.getElementById('faucetEmail').value;
+      if (!email || !email.includes('@')) {
+        alert("Please enter a valid FaucetPay email address!");
+        return;
+      }
+
       if (balance < 1.0000) {
-        showToast("⚠️ Minimum withdrawal is 1.00 DOGE!");
+        alert("⚠️ Minimum withdrawal threshold is 1.00 DOGE!");
       } else {
-        showToast("🎉 Withdrawal request sent to FaucetPay!");
+        alert(`🎉 Withdrawal request of ${balance.toFixed(4)} DOGE sent to ${email}!`);
+        balance = 0;
+        localStorage.setItem('doge_balance', balance);
+        updateUI();
+        closeWithdrawModal();
       }
     }
 
