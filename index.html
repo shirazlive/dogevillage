@@ -1,81 +1,210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doge Village - Water Well & Faucet</title>
-    <style>
-        body {
-            background-color: #f0f8ff;
-            font-family: 'Arial', sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 500px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
-        }
-        h1 { color: #f3ba2f; }
-        .btn {
-            background-color: #f3ba2f;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        .btn:hover { background-color: #d49f1b; }
-        .balance {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            margin: 15px 0;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doge Village - Crypto Idle Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #70c5ce 0%, #a2e2b7 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .game-card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 28px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+      text-align: center;
+      border: 4px solid #f7b731;
+    }
+
+    .header-title {
+      font-size: 28px;
+      color: #e1b12c;
+      font-weight: 800;
+      margin-bottom: 5px;
+      text-shadow: 1px 1px 0px #000;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #7f8c8d;
+      margin-bottom: 20px;
+    }
+
+    .village-scene {
+      background: #eccc68;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      position: relative;
+      border: 3px dashed #ffa502;
+    }
+
+    .doge-avatar {
+      font-size: 70px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease;
+      display: inline-block;
+    }
+
+    .doge-avatar:active {
+      transform: scale(1.2) rotate(5deg);
+    }
+
+    .stats-container {
+      background: #f1f2f6;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+
+    .balance-title {
+      font-size: 12px;
+      color: #747d8c;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .balance-amount {
+      font-size: 32px;
+      font-weight: 800;
+      color: #2ed573;
+      margin: 4px 0;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 0px rgba(0,0,0,0.2);
+    }
+
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0px rgba(0,0,0,0.2);
+    }
+
+    .btn-mine {
+      background: #ffa502;
+      color: #fff;
+    }
+
+    .btn-mine:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-withdraw {
+      background: #2ed573;
+      color: #fff;
+    }
+
+    .toast {
+      font-size: 13px;
+      color: #2f3542;
+      height: 20px;
+      margin-top: 5px;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>🐶 Doge Village</h1>
-        <p>Welcome to your cartoon-style crypto world!</p>
-        
-        <div class="balance">
-            Balance: <span id="dogeCount">0.00</span> DOGE
-        </div>
+  <div class="game-card">
+    <h1 class="header-title">🐕 Doge Village</h1>
+    <p class="subtitle">Tap the Doge to mine DOGE crypto!</p>
 
-        <button class="btn" onclick="earnDoge()">Watch Ad / Play (Earn 0.02 DOGE)</button>
-        <br><br>
-        <button class="btn" style="background-color: #28a745;" onclick="withdraw()">Withdraw to FaucetPay</button>
+    <div class="village-scene">
+      <div id="doge" class="doge-avatar" onclick="mineDoge()">🐶</div>
+      <div style="font-size: 12px; color: #57606f; margin-top: 8px;">Tap Doge or click Mine!</div>
     </div>
 
-    <script>
-        let balance = 0.00;
+    <div class="stats-container">
+      <div class="balance-title">Your Balance</div>
+      <div class="balance-amount"><span id="balance">0.0000</span> DOGE</div>
+    </div>
 
-        function earnDoge() {
-            balance += 0.02;
-            document.getElementById("dogeCount").innerText = balance.toFixed(2);
-            alert("Aapne 0.02 DOGE earn kar liya!");
+    <button id="mineBtn" class="btn btn-mine" onclick="mineDoge()">⛏️ Mine (Earn 0.02 DOGE)</button>
+    <button class="btn btn-withdraw" onclick="withdraw()">💸 Withdraw to FaucetPay</button>
+
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script>
+    let balance = parseFloat(localStorage.getItem('doge_balance')) || 0.0000;
+    let isCooldown = false;
+
+    document.getElementById('balance').innerText = balance.toFixed(4);
+
+    function mineDoge() {
+      if (isCooldown) return;
+
+      balance += 0.0200;
+      localStorage.setItem('doge_balance', balance);
+      document.getElementById('balance').innerText = balance.toFixed(4);
+
+      showToast("+0.02 DOGE Mined!");
+
+      // Doge bounce animation
+      const doge = document.getElementById('doge');
+      doge.style.transform = 'scale(1.3)';
+      setTimeout(() => doge.style.transform = 'scale(1)', 150);
+
+      // Cooldown timer (3 seconds)
+      isCooldown = true;
+      const btn = document.getElementById('mineBtn');
+      btn.disabled = true;
+      let timeLeft = 3;
+      
+      let timer = setInterval(() => {
+        btn.innerText = `⏳ Wait ${timeLeft}s...`;
+        timeLeft--;
+        if (timeLeft < 0) {
+          clearInterval(timer);
+          btn.disabled = false;
+          btn.innerText = "⛏️ Mine (Earn 0.02 DOGE)";
+          isCooldown = false;
         }
+      }, 1000);
+    }
 
-        function withdraw() {
-            if(balance >= 2.0) {
-                alert("Withdrawal successful! Sent to FaucetPay.");
-                balance = 0.00;
-                document.getElementById("dogeCount").innerText = balance.toFixed(2);
-            } else {
-                alert("Minimum withdrawal 2.0 DOGE hai!");
-            }
-        }
-    </script>
+    function withdraw() {
+      if (balance < 1.0000) {
+        showToast("⚠️ Minimum withdrawal is 1.00 DOGE!");
+      } else {
+        showToast("🎉 Withdrawal request sent to FaucetPay!");
+      }
+    }
 
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      setTimeout(() => {
+        if (toast.innerText === msg) toast.innerText = "";
+      }, 2500);
+    }
+  </script>
 </body>
 </html>
-
