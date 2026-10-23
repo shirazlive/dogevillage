@@ -16,15 +16,18 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #87CEEB;
+      background: #111;
     }
 
-    /* Screen Layout: Sky Top 55%, Ground Bottom 45% */
+    /* Embedded HD Village View */
     .village-fullscreen {
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: linear-gradient(180deg, #3a7bd5 0%, #3a7bd5 55%, #56ab2f 55%, #388e3c 100%);
+      background: url('village.png') no-repeat center center/cover,
+                  url('https://lh3.googleusercontent.com/d/1000552249') no-repeat center center/cover,
+                  #70c5ce;
+      background-size: cover;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -32,318 +35,196 @@
       padding: 15px;
     }
 
-    /* Sun & Sky Decor */
-    .sun {
-      position: absolute;
-      top: 20px;
-      right: 35px;
-      width: 55px;
-      height: 55px;
-      background: #ffdd59;
-      border-radius: 50%;
-      box-shadow: 0 0 30px #ffdd59;
-    }
-
-    .cloud {
-      position: absolute;
-      background: rgba(255, 255, 255, 0.9);
-      border-radius: 20px;
-      padding: 6px 20px;
-      font-size: 16px;
-    }
-    .cloud1 { top: 25px; left: 8%; }
-    .cloud2 { top: 40px; right: 22%; }
-
-    /* Header Signboard */
-    .village-header {
-      background: #8b4513;
-      border: 4px solid #dda15e;
-      padding: 8px 22px;
-      border-radius: 14px;
-      color: #fffae6;
-      text-align: center;
-      box-shadow: 0 8px 18px rgba(0,0,0,0.3);
-      z-index: 5;
-    }
-
-    .village-header h1 {
-      font-size: 22px;
-      font-weight: 800;
-      text-shadow: 2px 2px #000;
-      color: #ffe6a7;
-    }
-
-    /* Village Scene Exactly Ground Boundary par Fixed */
-    .village-ground-scene {
-      position: absolute;
-      top: 55%;
-      left: 50%;
-      transform: translate(-50%, -80%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      z-index: 5;
-      width: 100%;
-      max-width: 600px;
-    }
-
-    /* Background Village Houses sitting on Ground */
-    .village-decor {
-      display: flex;
-      justify-content: space-around;
-      width: 100%;
-      margin-bottom: -15px;
-    }
-
-    .house {
-      font-size: 40px;
-      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.3));
-    }
-
-    /* Doge Well Structure */
-    .well-structure {
-      background: #6c757d;
-      border: 4px solid #343a40;
-      border-radius: 40px 40px 15px 15px;
-      padding: 10px 28px;
-      text-align: center;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-      position: relative;
-    }
-
-    .well-roof {
-      background: #b08968;
-      border: 3px solid #7f5539;
-      border-radius: 10px;
-      padding: 4px 18px;
-      margin-bottom: 6px;
-      font-weight: bold;
-      color: #fff;
-      font-size: 13px;
-      text-shadow: 1px 1px #000;
-    }
-
-    .cartoon-well-bucket {
-      font-size: 48px;
-      line-height: 1;
-      cursor: pointer;
-      transition: transform 0.1s ease;
-      display: inline-block;
-    }
-
-    .cartoon-well-bucket:active {
-      transform: scale(1.2) rotate(-10deg);
-    }
-
-    /* Villagers Group Standing on Ground */
-    .villagers-group {
-      display: flex;
-      gap: 25px;
-      margin-top: 8px;
-      align-items: flex-end;
-    }
-
-    .villager {
-      font-size: 35px;
-      position: relative;
-    }
-
-    /* Auto Waving Speech Bubble */
+    /* Auto Waving Chat Bubble (1 min interval) */
     .wave-bubble {
       position: absolute;
-      top: -38px;
+      top: 48%;
       left: 50%;
-      transform: translateX(-50%);
-      background: #fff;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.95);
       color: #333;
-      padding: 6px 12px;
-      border-radius: 14px;
-      font-size: 11px;
-      font-weight: bold;
-      white-space: nowrap;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
-      border: 2px solid #f77f00;
-      animation: bounce 1.5s infinite;
+      padding: 10px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+      border: 3px solid #f77f00;
+      animation: pulseWave 1.5s infinite alternate;
       display: none;
+      z-index: 10;
+      text-align: center;
     }
 
-    @keyframes bounce {
-      0%, 100% { transform: translate(-50%, 0); }
-      50% { transform: translate(-50%, -6px); }
+    @keyframes pulseWave {
+      0% { transform: translate(-50%, -50%) scale(0.95); }
+      100% { transform: translate(-50%, -50%) scale(1.05); }
     }
 
-    /* Control Dashboard Panel */
+    /* Clickable target over Doge Well in the image */
+    .well-click-target {
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 260px;
+      height: 220px;
+      cursor: pointer;
+      z-index: 8;
+      border-radius: 50%;
+    }
+
+    /* Dashboard Overlay at Bottom */
     .dashboard-panel {
       position: relative;
-      background: rgba(255, 248, 231, 0.96);
-      border: 4px solid #d4a373;
-      border-radius: 20px;
-      padding: 16px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.3);
       z-index: 10;
+      background: rgba(43, 29, 14, 0.88);
+      border: 3px solid #dda15e;
+      border-radius: 20px;
+      padding: 14px 18px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
       margin-bottom: 5px;
+      color: #fff;
     }
 
     .stats-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: #fefae0;
-      border: 2px solid #dda15e;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid #dda15e;
       border-radius: 12px;
-      padding: 10px 15px;
+      padding: 8px 14px;
       margin-bottom: 10px;
     }
 
     .balance-val {
       font-size: 22px;
       font-weight: 800;
-      color: #2b9348;
+      color: #2ed573;
+      text-shadow: 1px 1px 2px #000;
     }
 
     .queue-box {
-      background: #faedcd;
+      background: rgba(212, 163, 115, 0.25);
       border-radius: 10px;
       padding: 8px 12px;
       font-size: 12px;
       margin-bottom: 10px;
-      border: 1px solid #ccd5ae;
+      border: 1px solid #dda15e;
       text-align: center;
+      color: #fffae6;
     }
 
     .btn-grid {
       display: flex;
-      flex-direction: column;
       gap: 8px;
     }
 
     .btn {
-      width: 100%;
-      padding: 11px;
-      font-size: 14px;
+      flex: 1;
+      padding: 11px 6px;
+      font-size: 12px;
       font-weight: bold;
       border: none;
       border-radius: 10px;
       cursor: pointer;
       color: white;
-      box-shadow: 0 4px 0px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 0px rgba(0,0,0,0.3);
       transition: all 0.1s ease;
+      text-shadow: 1px 1px 1px #000;
     }
 
     .btn:active {
       transform: translateY(2px);
-      box-shadow: 0 1px 0px rgba(0,0,0,0.2);
+      box-shadow: 0 1px 0px rgba(0,0,0,0.3);
     }
 
-    .btn-well { background: #f77f00; box-shadow: 0 3px 0px #d65f00; }
-    .btn-pool { background: #d4a373; box-shadow: 0 3px 0px #b08968; }
-    .btn-withdraw { background: #283618; box-shadow: 0 3px 0px #1e2612; }
+    .btn-well { background: #e67e22; box-shadow: 0 3px 0px #d35400; }
+    .btn-pool { background: #27ae60; box-shadow: 0 3px 0px #1e8449; }
+    .btn-withdraw { background: #2980b9; box-shadow: 0 3px 0px #1c5980; }
 
-    /* FaucetPay Modal */
+    /* Modal */
     .modal {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.75);
+      background: rgba(0,0,0,0.8);
       justify-content: center;
       align-items: center;
       z-index: 100;
     }
 
     .modal-content {
-      background: #fff;
+      background: #2b1d0e;
       padding: 20px;
       border-radius: 18px;
       width: 90%;
-      max-width: 320px;
+      max-width: 330px;
       text-align: center;
-      border: 3px solid #d4a373;
+      border: 3px solid #dda15e;
+      color: #fff;
     }
 
     .modal-content input {
       width: 100%;
       padding: 10px;
       margin: 12px 0;
-      border: 2px solid #ccc;
+      border: 2px solid #dda15e;
       border-radius: 8px;
       font-size: 14px;
+      background: #fff;
+      color: #000;
     }
   </style>
 </head>
 <body>
 
   <div class="village-fullscreen">
-    <div class="sun"></div>
-    <div class="cloud cloud1">☁️</div>
-    <div class="cloud cloud2">☁️</div>
 
-    <!-- Header Signboard -->
-    <div class="village-header">
-      <h1>🪵 Doge Well Village</h1>
-      <div style="font-size: 11px; color: #ffe6a7;">Pool • Play • Earn • Win</div>
-    </div>
+    <!-- Invisible Click Target over center Doge Well -->
+    <div class="well-click-target" onclick="mineDoge()" title="Tap Doge Well to Draw DOGE!"></div>
 
-    <!-- Village Ground Scene Area -->
-    <div class="village-ground-scene">
-      <div class="village-decor">
-        <div class="house">🏡</div>
-        <div class="house">🌲</div>
-        <div class="house">🏠</div>
-        <div class="house">🌳</div>
-        <div class="house">🏚️</div>
-      </div>
+    <!-- Auto Waving Chat Bubble (Every 1 Minute) -->
+    <div id="waveBubble" class="wave-bubble">👋 Aajaao sab! Pool Queue mein 10x chance hai! 🌊</div>
 
-      <div class="well-structure">
-        <div class="well-roof">🪵 DOGE WELL</div>
-        <div class="cartoon-well-bucket" onclick="mineDoge()" title="Click Bucket to Mine DOGE!">🪣</div>
-      </div>
-
-      <div class="villagers-group">
-        <div class="villager">
-          🐶
-          <div id="waveBubble" class="wave-bubble">👋 Aajaao, Pool mein 10x chance hai!</div>
-        </div>
-        <div class="villager">👨‍🌾</div>
-        <div class="villager">👵</div>
-      </div>
-    </div>
-
-    <!-- Control Dashboard -->
+    <!-- Bottom Dashboard Overlay -->
     <div class="dashboard-panel">
       <div class="stats-row">
         <div>
-          <div style="font-size: 10px; color: #666; text-transform: uppercase; font-weight: bold;">Your Balance</div>
+          <div style="font-size: 10px; color: #ccc; text-transform: uppercase; font-weight: bold;">Your Balance</div>
           <div class="balance-val"><span id="balance">0.0000</span> DOGE</div>
         </div>
         <div style="text-align: right;">
-          <div id="levelBadge" style="font-size: 12px; color: #bc6c25; font-weight: bold;">🏠 Level 1</div>
-          <div style="font-size: 10px; color: #777;">Active Miner</div>
+          <div id="levelBadge" style="font-size: 12px; color: #f39c12; font-weight: bold;">🏠 Level 1</div>
+          <div style="font-size: 10px; color: #bbb;">Active Miner</div>
         </div>
       </div>
 
       <div class="queue-box">
         <b>🌊 Water Well Pool Queue:</b> <span id="poolCount">3</span> / 10 DOGE<br>
-        <span style="font-size: 11px; color: #7f4f24;">Rule: 1 DOGE entry = 9 DOGE win chance!</span>
+        <span style="font-size: 11px; color: #f1c40f;">1 DOGE Entry = 9 DOGE Win Chance!</span>
       </div>
 
       <div class="btn-grid">
-        <button class="btn btn-well" onclick="mineDoge()">🪣 Draw from Well (+0.02 DOGE)</button>
-        <button class="btn btn-pool" onclick="joinPool()">🏊 Join Pool Queue (1 DOGE)</button>
-        <button class="btn btn-withdraw" onclick="openModal()">💸 Withdraw to FaucetPay</button>
+        <button class="btn btn-well" onclick="mineDoge()">🪣 Draw (+0.02)</button>
+        <button class="btn btn-pool" onclick="joinPool()">🏊 Join Pool (1 DOGE)</button>
+        <button class="btn btn-withdraw" onclick="openModal()">💸 Withdraw</button>
       </div>
     </div>
+
   </div>
 
   <!-- FaucetPay Modal -->
   <div id="withdrawModal" class="modal">
     <div class="modal-content">
-      <h3 style="color: #283618; margin-bottom: 5px;">💸 FaucetPay Payout</h3>
-      <p style="font-size: 12px; color: #666;">Enter your registered FaucetPay email.</p>
+      <h3 style="color: #f39c12; margin-bottom: 5px;">💸 FaucetPay Payout</h3>
+      <p style="font-size: 12px; color: #ccc;">Enter your registered FaucetPay email.</p>
       <input type="email" id="faucetEmail" placeholder="example@gmail.com">
-      <button class="btn btn-withdraw" onclick="submitWithdraw()">Submit Request</button>
-      <button class="btn" style="background: #bc4749; margin-top: 8px;" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-pool" style="width:100%; margin-top: 5px;" onclick="submitWithdraw()">Submit Payout Request</button>
+      <button class="btn" style="width:100%; background: #c0392b; margin-top: 8px;" onclick="closeModal()">Cancel</button>
     </div>
   </div>
 
@@ -361,7 +242,7 @@
       bubble.style.display = 'block';
       setTimeout(() => {
         bubble.style.display = 'none';
-      }, 5000);
+      }, 6000);
     }, 60000);
 
     function updateUI() {
