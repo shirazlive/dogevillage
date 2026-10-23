@@ -13,141 +13,133 @@
     }
 
     body {
-      background: #2c3e50;
+      background: #1e1b18;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 10px;
+      padding: 0;
+      overflow-x: hidden;
     }
 
-    .game-container {
-      width: 100%;
-      max-width: 480px;
-      background: #fff8e7;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
-      border: 4px solid #d4a373;
-    }
-
-    .scene-box {
+    .village-fullscreen {
       position: relative;
-      width: 100%;
-      height: 320px;
-      background: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1000&auto=format&fit=crop') no-repeat center center/cover;
+      width: 100vw;
+      height: 100vh;
+      background: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop') no-repeat center center/cover;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      padding: 15px;
-      border-bottom: 4px solid #d4a373;
+      align-items: center;
+      padding: 20px;
     }
 
-    .signboard {
-      background: rgba(139, 69, 19, 0.9);
+    /* Top Village Header */
+    .village-header {
+      background: rgba(139, 69, 19, 0.85);
+      border: 3px dashed #ffd700;
+      padding: 10px 25px;
+      border-radius: 15px;
       color: #fffae6;
-      padding: 8px 15px;
-      border-radius: 10px;
-      font-weight: bold;
       text-align: center;
-      border: 2px dashed #ffd700;
-      font-size: 14px;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-      align-self: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
     }
 
-    .well-action-area {
-      text-align: center;
-      background: rgba(0,0,0,0.5);
-      padding: 10px;
-      border-radius: 12px;
-      backdrop-filter: blur(4px);
+    .village-header h1 {
+      font-size: 24px;
+      font-weight: 800;
+      text-shadow: 2px 2px #000;
     }
 
-    .well-btn {
-      background: #f77f00;
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      font-size: 15px;
-      font-weight: bold;
-      border-radius: 25px;
-      cursor: pointer;
-      box-shadow: 0 4px 0px #d65f00;
-      transition: all 0.1s ease;
-    }
-
-    .well-btn:active {
-      transform: translateY(3px);
-      box-shadow: 0 1px 0px #d65f00;
-    }
-
-    .chat-bubble {
+    /* Floating Chat Bubble for Waving */
+    .wave-bubble {
       position: absolute;
-      bottom: 110px;
+      top: 30%;
       background: #fff;
       color: #333;
-      padding: 6px 12px;
-      border-radius: 12px;
-      font-size: 11px;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
       font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      border: 2px solid #f77f00;
       animation: bounce 1.5s infinite;
       display: none;
+      z-index: 10;
     }
 
     @keyframes bounce {
       0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-5px); }
+      50% { transform: translateY(-8px); }
     }
 
-    .ui-panel {
+    /* Bottom Control Dashboard Overlay */
+    .dashboard-panel {
+      background: rgba(255, 248, 231, 0.95);
+      border: 4px solid #d4a373;
+      border-radius: 25px;
       padding: 20px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.6);
+      backdrop-filter: blur(5px);
+      margin-bottom: 10px;
     }
 
-    .stats-box {
+    .stats-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       background: #fefae0;
       border: 2px solid #dda15e;
-      border-radius: 12px;
-      padding: 12px;
-      text-align: center;
-      margin-bottom: 15px;
+      border-radius: 15px;
+      padding: 12px 18px;
+      margin-bottom: 12px;
     }
 
     .balance-val {
-      font-size: 26px;
+      font-size: 24px;
       font-weight: 800;
       color: #2b9348;
     }
 
-    .queue-info {
+    .queue-box {
       background: #faedcd;
-      border-radius: 10px;
-      padding: 10px;
+      border-radius: 12px;
+      padding: 10px 15px;
       font-size: 13px;
       margin-bottom: 15px;
       border: 1px solid #ccd5ae;
+      text-align: center;
     }
 
-    .btn-group {
+    .btn-grid {
       display: flex;
+      flex-direction: column;
       gap: 10px;
     }
 
     .btn {
-      flex: 1;
-      padding: 12px;
-      font-size: 14px;
+      width: 100%;
+      padding: 14px;
+      font-size: 15px;
       font-weight: bold;
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       cursor: pointer;
       color: white;
       box-shadow: 0 4px 0px rgba(0,0,0,0.2);
+      transition: all 0.1s ease;
     }
 
-    .btn-pool { background: #d4a373; }
-    .btn-withdraw { background: #283618; }
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0px rgba(0,0,0,0.2);
+    }
+
+    .btn-well { background: #f77f00; box-shadow: 0 4px 0px #d65f00; }
+    .btn-pool { background: #d4a373; box-shadow: 0 4px 0px #b08968; }
+    .btn-withdraw { background: #283618; box-shadow: 0 4px 0px #1e2612; }
 
     /* Modal */
     .modal {
@@ -162,53 +154,58 @@
 
     .modal-content {
       background: #fff;
-      padding: 20px;
-      border-radius: 15px;
-      width: 85%;
-      max-width: 320px;
+      padding: 25px;
+      border-radius: 20px;
+      width: 90%;
+      max-width: 350px;
       text-align: center;
+      border: 3px solid #d4a373;
     }
 
     .modal-content input {
       width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: 1px solid #ccc;
-      border-radius: 8px;
+      padding: 12px;
+      margin: 15px 0;
+      border: 2px solid #ccc;
+      border-radius: 10px;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
 
-  <div class="game-container">
-    <!-- Village & Doge Well Visual Scene -->
-    <div class="scene-box">
-      <div class="signboard">🪵 Doge Well (Pool Queue)</div>
-      
-      <!-- Auto Waving Chat Bubble -->
-      <div id="waveBubble" class="chat-bubble">👋 Aajaao yaar, pool mein 10x jeeto!</div>
-
-      <div class="well-action-area">
-        <button class="well-btn" onclick="mineDoge()">🪣 Draw from Well (+0.02 DOGE)</button>
-      </div>
+  <div class="village-fullscreen">
+    <!-- Header Board -->
+    <div class="village-header">
+      <h1>🪵 Doge Well Village</h1>
+      <div style="font-size: 12px; color: #ffe6a7;">Pool • Play • Earn • Win</div>
     </div>
 
-    <!-- Stats & Controls -->
-    <div class="ui-panel">
-      <div class="stats-box">
-        <div style="font-size: 11px; color: #666; text-transform: uppercase;">Your Balance</div>
-        <div class="balance-val"><span id="balance">0.0000</span> DOGE</div>
-        <div id="levelBadge" style="font-size: 12px; color: #bc6c25; font-weight: bold; margin-top: 3px;">🏠 Village Level 1</div>
+    <!-- Auto Waving Chat Bubble -->
+    <div id="waveBubble" class="wave-bubble">👋 Aajaao yaar, pool mein 10x jeeto!</div>
+
+    <!-- Bottom Interactive Dashboard -->
+    <div class="dashboard-panel">
+      <div class="stats-row">
+        <div>
+          <div style="font-size: 10px; color: #666; text-transform: uppercase; font-weight: bold;">Your Balance</div>
+          <div class="balance-val"><span id="balance">0.0000</span> DOGE</div>
+        </div>
+        <div style="text-align: right;">
+          <div id="levelBadge" style="font-size: 12px; color: #bc6c25; font-weight: bold;">🏠 Level 1</div>
+          <div style="font-size: 11px; color: #777;">Active Miner</div>
+        </div>
       </div>
 
-      <div class="queue-info">
+      <div class="queue-box">
         <b>🌊 Water Well Pool Queue:</b> <span id="poolCount">3</span> / 10 DOGE<br>
         <span style="font-size: 11px; color: #7f4f24;">Rule: 1 DOGE entry = 9 DOGE win chance!</span>
       </div>
 
-      <div class="btn-group">
-        <button class="btn btn-pool" onclick="joinPool()">🏊 Join Pool (1 DOGE)</button>
-        <button class="btn btn-withdraw" onclick="openModal()">💸 Withdraw</button>
+      <div class="btn-grid">
+        <button class="btn btn-well" onclick="mineDoge()">🪣 Draw from Well (+0.02 DOGE)</button>
+        <button class="btn btn-pool" onclick="joinPool()">🏊 Join Pool Queue (1 DOGE)</button>
+        <button class="btn btn-withdraw" onclick="openModal()">💸 Withdraw to FaucetPay</button>
       </div>
     </div>
   </div>
@@ -216,10 +213,11 @@
   <!-- FaucetPay Modal -->
   <div id="withdrawModal" class="modal">
     <div class="modal-content">
-      <h3>💸 FaucetPay Payout</h3>
-      <input type="email" id="faucetEmail" placeholder="Enter FaucetPay Email">
-      <button class="well-btn" style="width:100%; margin-top:5px;" onclick="submitWithdraw()">Submit Request</button>
-      <button class="well-btn" style="width:100%; margin-top:5px; background:#bc4749;" onclick="closeModal()">Cancel</button>
+      <h3 style="color: #283618; margin-bottom: 5px;">💸 FaucetPay Payout</h3>
+      <p style="font-size: 12px; color: #666;">Enter your registered FaucetPay email.</p>
+      <input type="email" id="faucetEmail" placeholder="example@gmail.com">
+      <button class="btn btn-withdraw" onclick="submitWithdraw()">Submit Request</button>
+      <button class="btn" style="background: #bc4749; margin-top: 8px;" onclick="closeModal()">Cancel</button>
     </div>
   </div>
 
@@ -231,18 +229,18 @@
 
     updateUI();
 
-    // Automatic Waving and Inviting Animation every 1 Minute (60,000 ms)
+    // Automatic Waving and Inviting Animation every 1 Minute
     setInterval(() => {
       const bubble = document.getElementById('waveBubble');
       bubble.style.display = 'block';
       setTimeout(() => {
         bubble.style.display = 'none';
-      }, 5000); // Bubble stays for 5 seconds
+      }, 5000);
     }, 60000);
 
     function updateUI() {
       document.getElementById('balance').innerText = balance.toFixed(4);
-      document.getElementById('levelBadge').innerText = `🏠 Village Level ${level}`;
+      document.getElementById('levelBadge').innerText = `🏠 Level ${level}`;
       document.getElementById('poolCount').innerText = poolCount;
     }
 
