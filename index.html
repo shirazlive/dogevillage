@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doge Village - Water Well & Faucet</title>
+    <style>
+        body {
+            background-color: #f0f8ff;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #f3ba2f; }
+        .btn {
+            background-color: #f3ba2f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+        .btn:hover { background-color: #d49f1b; }
+        .balance {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🐶 Doge Village</h1>
+        <p>Welcome to your cartoon-style crypto world!</p>
+        
+        <div class="balance">
+            Balance: <span id="dogeCount">0.00</span> DOGE
+        </div>
+
+        <button class="btn" onclick="earnDoge()">Watch Ad / Play (Earn 0.02 DOGE)</button>
+        <br><br>
+        <button class="btn" style="background-color: #28a745;" onclick="withdraw()">Withdraw to FaucetPay</button>
+    </div>
+
+    <script>
+        let balance = 0.00;
+
+        function earnDoge() {
+            balance += 0.02;
+            document.getElementById("dogeCount").innerText = balance.toFixed(2);
+            alert("Aapne 0.02 DOGE earn kar liya!");
+        }
+
+        function withdraw() {
+            if(balance >= 2.0) {
+                alert("Withdrawal successful! Sent to FaucetPay.");
+                balance = 0.00;
+                document.getElementById("dogeCount").innerText = balance.toFixed(2);
+            } else {
+                alert("Minimum withdrawal 2.0 DOGE hai!");
+            }
+        }
+    </script>
+
+</body>
+</html>
+
