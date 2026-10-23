@@ -1,701 +1,299 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Doge Village - Faucet & Water Well Queue</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts: Fredoka / Inter for playful cartoon feel -->
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        cartoon: ['Fredoka', 'sans-serif'],
-                        sans: ['Inter', 'sans-serif'],
-                    },
-                    colors: {
-                        doge: {
-                            gold: '#F2A900',
-                            dark: '#C28400',
-                            light: '#FFE29A',
-                            bg: '#FFF8E7'
-                        },
-                        village: {
-                            sky: '#70D6FF',
-                            grass: '#7BDFF2',
-                            green: '#52B788',
-                            brown: '#8D5B4C',
-                            wood: '#D4A373'
-                        }
-                    },
-                    animation: {
-                        'bounce-short': 'bounce 0.6s infinite alternate',
-                        'wave': 'wave 0.5s ease-in-out infinite alternate',
-                        'float': 'float 3s ease-in-out infinite',
-                        'pulse-glow': 'pulseGlow 2s infinite',
-                    },
-                    keyframes: {
-                        wave: {
-                            '0%': { transform: 'rotate(0deg)' },
-                            '100%': { transform: 'rotate(20deg)' }
-                        },
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0px)' },
-                            '50%': { transform: 'translateY(-8px)' }
-                        },
-                        pulseGlow: {
-                            '0%, 100%': { boxShadow: '0 0 15px rgba(242, 169, 0, 0.4)' },
-                            '50%': { boxShadow: '0 0 25px rgba(242, 169, 0, 0.8)' }
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        body {
-            font-family: 'Fredoka', sans-serif;
-            background: linear-gradient(180deg, #70D6FF 0%, #B8F2E6 40%, #70E100 40.1%, #38B000 100%);
-            min-height: 100vh;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doge Village - Doge Well & Pool Queue</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-        .cartoon-border {
-            border: 3px solid #2B2D42;
-            box-shadow: 0 6px 0 #2B2D42;
-        }
+    body {
+      background: #2c3e50;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
 
-        .cartoon-border-sm {
-            border: 2px solid #2B2D42;
-            box-shadow: 0 4px 0 #2B2D42;
-        }
+    .game-container {
+      width: 100%;
+      max-width: 480px;
+      background: #fff8e7;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      border: 4px solid #d4a373;
+    }
 
-        .cartoon-btn {
-            transition: all 0.1s ease;
-            position: relative;
-            top: 0;
-        }
+    .scene-box {
+      position: relative;
+      width: 100%;
+      height: 320px;
+      background: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1000&auto=format&fit=crop') no-repeat center center/cover;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 15px;
+      border-bottom: 4px solid #d4a373;
+    }
 
-        .cartoon-btn:active {
-            top: 4px;
-            box-shadow: 0 0 0 #2B2D42 !important;
-        }
+    .signboard {
+      background: rgba(139, 69, 19, 0.9);
+      color: #fffae6;
+      padding: 8px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+      text-align: center;
+      border: 2px dashed #ffd700;
+      font-size: 14px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+      align-self: center;
+    }
 
-        .chat-bubble {
-            position: relative;
-            background: #ffffff;
-            border-radius: .4em;
-            border: 2px solid #2B2D42;
-        }
+    .well-action-area {
+      text-align: center;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 12px;
+      backdrop-filter: blur(4px);
+    }
 
-        .chat-bubble:after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            left: 50%;
-            width: 0;
-            height: 0;
-            border: 8px solid transparent;
-            border-top-color: #2B2D42;
-            border-bottom: 0;
-            margin-left: -8px;
-            margin-bottom: -8px;
-        }
+    .well-btn {
+      background: #f77f00;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 15px;
+      font-weight: bold;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 4px 0px #d65f00;
+      transition: all 0.1s ease;
+    }
 
-        /* Waving animation class triggered dynamically */
-        .is-waving {
-            animation: waveArm 0.3s ease-in-out infinite alternate !important;
-            transform-origin: bottom center;
-        }
+    .well-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0px #d65f00;
+    }
 
-        @keyframes waveArm {
-            0% { transform: rotate(-10deg) scale(1.05); }
-            100% { transform: rotate(15deg) scale(1.05); }
-        }
+    .chat-bubble {
+      position: absolute;
+      bottom: 110px;
+      background: #fff;
+      color: #333;
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: bold;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      animation: bounce 1.5s infinite;
+      display: none;
+    }
 
-        .well-water {
-            background: linear-gradient(180deg, #3A86FF 0%, #004E64 100%);
-            animation: pulse 2s infinite alternate;
-        }
-    </style>
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    .ui-panel {
+      padding: 20px;
+    }
+
+    .stats-box {
+      background: #fefae0;
+      border: 2px solid #dda15e;
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .balance-val {
+      font-size: 26px;
+      font-weight: 800;
+      color: #2b9348;
+    }
+
+    .queue-info {
+      background: #faedcd;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      margin-bottom: 15px;
+      border: 1px solid #ccd5ae;
+    }
+
+    .btn-group {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn {
+      flex: 1;
+      padding: 12px;
+      font-size: 14px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      color: white;
+      box-shadow: 0 4px 0px rgba(0,0,0,0.2);
+    }
+
+    .btn-pool { background: #d4a373; }
+    .btn-withdraw { background: #283618; }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal-content {
+      background: #fff;
+      padding: 20px;
+      border-radius: 15px;
+      width: 85%;
+      max-width: 320px;
+      text-align: center;
+    }
+
+    .modal-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+  </style>
 </head>
-<body class="p-2 md:p-6 text-slate-800 flex flex-col items-center justify-start min-h-screen">
+<body>
 
-    <!-- MAIN WRAPPER CONTAINER -->
-    <div class="w-full max-w-4xl space-y-4">
+  <div class="game-container">
+    <!-- Village & Doge Well Visual Scene -->
+    <div class="scene-box">
+      <div class="signboard">🪵 Doge Well (Pool Queue)</div>
+      
+      <!-- Auto Waving Chat Bubble -->
+      <div id="waveBubble" class="chat-bubble">👋 Aajaao yaar, pool mein 10x jeeto!</div>
 
-        <!-- HEADER & USER STATS BAR -->
-        <header class="bg-white/95 backdrop-blur rounded-2xl p-4 cartoon-border flex flex-col md:flex-row items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <div class="w-12 h-12 bg-doge-gold rounded-full border-2 border-black flex items-center justify-center text-2xl shadow-md">
-                    🐕
-                </div>
-                <div>
-                    <h1 class="text-xl md:text-2xl font-bold text-slate-900 tracking-wide flex items-center gap-2">
-                        Doge Village <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full border border-amber-300">v2.0 Faucet</span>
-                    </h1>
-                    <p class="text-xs text-slate-500">Earn DOGE & Pool in the Doge Water Well for 10x!</p>
-                </div>
-            </div>
-
-            <!-- STATS COUNTERS -->
-            <div class="grid grid-cols-3 gap-2 w-full md:w-auto">
-                <div class="bg-amber-50 p-2 px-3 rounded-xl border border-amber-200 text-center">
-                    <span class="text-xs font-semibold text-amber-700 block uppercase">Balance</span>
-                    <span id="user-balance" class="text-base md:text-lg font-bold text-amber-900">0.00 DOGE</span>
-                </div>
-                <div class="bg-blue-50 p-2 px-3 rounded-xl border border-blue-200 text-center">
-                    <span class="text-xs font-semibold text-blue-700 block uppercase">Pool Tickets</span>
-                    <span id="user-tickets" class="text-base md:text-lg font-bold text-blue-900">0 Entries</span>
-                </div>
-                <div class="bg-emerald-50 p-2 px-3 rounded-xl border border-emerald-200 text-center">
-                    <span class="text-xs font-semibold text-emerald-700 block uppercase">Level</span>
-                    <span id="user-level" class="text-base md:text-lg font-bold text-emerald-900">Lv. 1 Villager</span>
-                </div>
-            </div>
-        </header>
-
-        <!-- CARTOON DOGE WATER WELL SCENE (VISUAL QUEUE DISPLAY) -->
-        <section class="relative bg-gradient-to-b from-sky-300 via-sky-200 to-emerald-400 rounded-3xl p-4 md:p-6 cartoon-border overflow-hidden min-h-[340px] flex flex-col justify-between">
-            
-            <!-- SKY ELEMENTS (SUN & CLOUDS) -->
-            <div class="absolute top-3 left-4 flex items-center gap-2 text-yellow-400 text-3xl animate-spin-slow">
-                ☀️
-            </div>
-            <div class="absolute top-4 right-10 text-white/80 text-4xl animate-float">
-                ☁️
-            </div>
-            <div class="absolute top-10 left-1/3 text-white/60 text-2xl animate-float" style="animation-delay: 1s;">
-                ☁️
-            </div>
-
-            <!-- SCENE TOP TOOLBAR -->
-            <div class="relative z-10 flex justify-between items-center bg-white/80 backdrop-blur px-4 py-2 rounded-xl cartoon-border-sm">
-                <div class="flex items-center gap-2">
-                    <span class="text-xl">🕳️</span>
-                    <span class="font-bold text-slate-800 text-sm md:text-base">Doge Water Well Queue Status</span>
-                </div>
-                <div class="text-xs bg-amber-400 text-slate-900 font-bold px-3 py-1 rounded-full border border-black">
-                    Target: 10 DOGE / Cycle
-                </div>
-            </div>
-
-            <!-- WATER WELL & CHARACTERS INTERACTIVE STAGE -->
-            <div class="relative z-10 my-4 flex items-end justify-center min-h-[180px] gap-2 md:gap-8">
-
-                <!-- DOGE NEAR WELL (CALLING / WAITING) -->
-                <div id="doge-near" class="relative flex flex-col items-center transition-all duration-300">
-                    <!-- CHAT BUBBLE -->
-                    <div id="near-chat" class="chat-bubble px-3 py-1 mb-2 text-xs font-bold text-amber-900 shadow-sm animate-bounce-short">
-                        Jump in! 10x Pool filling up! 🌊
-                    </div>
-                    <!-- DOGE AVATAR -->
-                    <div id="doge-near-avatar" class="text-5xl md:text-6xl cursor-pointer select-none transform transition-transform hover:scale-110">
-                        🐶
-                    </div>
-                    <span class="bg-amber-200 border border-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1">
-                        Queue #1 (Spot)
-                    </span>
-                </div>
-
-                <!-- THE CENTRAL CARTOON WATER WELL -->
-                <div class="relative flex flex-col items-center mx-2 md:mx-6">
-                    <!-- ROOF OF WELL -->
-                    <div class="w-24 md:w-32 h-6 bg-red-600 rounded-t-lg cartoon-border-sm relative flex items-center justify-center">
-                        <div class="text-[10px] text-white font-bold tracking-wider uppercase">DOGE POOL</div>
-                    </div>
-                    <!-- PILLARS -->
-                    <div class="w-20 md:w-28 flex justify-between px-2">
-                        <div class="w-2 h-10 bg-amber-800 border-x border-black"></div>
-                        <div class="w-2 h-10 bg-amber-800 border-x border-black"></div>
-                    </div>
-                    <!-- WELL BUCKET & BASIN -->
-                    <div class="relative w-28 md:w-36 h-20 bg-amber-700 rounded-b-2xl cartoon-border-sm flex flex-col items-center justify-center overflow-hidden">
-                        <div class="well-water absolute bottom-0 w-full h-10 border-t-2 border-sky-200 flex items-center justify-center text-white text-xs font-bold">
-                            <span id="well-water-level-text">6 / 10 DOGE</span>
-                        </div>
-                        <div class="relative z-10 text-xl font-bold text-yellow-300 drop-shadow">
-                            🪙
-                        </div>
-                    </div>
-                </div>
-
-                <!-- DOGE FAR FROM WELL (APPROACHING / INVITED) -->
-                <div id="doge-far" class="relative flex flex-col items-center transition-all duration-300">
-                    <!-- CHAT BUBBLE -->
-                    <div id="far-chat" class="chat-bubble px-3 py-1 mb-2 text-xs font-bold text-slate-800 shadow-sm">
-                        Should I deposit 1 DOGE? 🤔
-                    </div>
-                    <!-- DOGE AVATAR -->
-                    <div id="doge-far-avatar" class="text-4xl md:text-5xl cursor-pointer select-none transform transition-transform hover:scale-110">
-                        🐕
-                    </div>
-                    <span class="bg-slate-200 border border-slate-700 text-[10px] font-bold px-2 py-0.5 rounded-full mt-1">
-                        Waiting Villager
-                    </span>
-                </div>
-
-            </div>
-
-            <!-- INTERACTIVE WAVING BUTTON & PROGRESS BAR -->
-            <div class="relative z-10 space-y-3">
-                <!-- PROGRESS BAR -->
-                <div class="w-full bg-slate-900/40 rounded-full h-5 p-1 border border-white/50 backdrop-blur flex items-center">
-                    <div id="queue-progress-bar" class="bg-gradient-to-r from-amber-400 to-yellow-300 h-full rounded-full transition-all duration-500 flex items-center justify-end px-2" style="width: 60%;">
-                        <span id="queue-progress-text" class="text-[10px] font-bold text-slate-900 leading-none">60%</span>
-                    </div>
-                </div>
-
-                <!-- WAVING ACTION BUTTON -->
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
-                    <button id="wave-btn" onclick="triggerWavingAnimation()" class="w-full sm:w-auto bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-bold px-4 py-2.5 rounded-xl cartoon-border cartoon-btn flex items-center justify-center gap-2 text-sm">
-                        <span>👋 Wave & Invite to Pool!</span>
-                        <span class="text-xs bg-black/10 px-2 py-0.5 rounded-full">Boost Animation</span>
-                    </button>
-
-                    <div class="text-xs text-slate-800 font-bold bg-white/90 px-3 py-1.5 rounded-xl border border-black/20 flex items-center gap-2">
-                        <i class="fa-solid fa-users text-amber-600"></i>
-                        <span>Live Queue Total: <strong id="total-queue-count" class="text-amber-900">6 Players</strong></span>
-                    </div>
-                </div>
-            </div>
-
-        </section>
-
-        <!-- CORE INTERACTION GRID (EARNING & WATER WELL QUEUE SYSTEM) -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-            <!-- SECTION 1: EARNING MECHANISM (MINING & ADS) -->
-            <div class="bg-white rounded-2xl p-5 cartoon-border flex flex-col justify-between space-y-4">
-                <div>
-                    <div class="flex items-center justify-between border-b-2 border-slate-100 pb-3 mb-3">
-                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                            <span>⛏️</span> Faucet Mine / Ad Reward
-                        </h2>
-                        <span class="text-xs font-bold bg-emerald-100 text-emerald-800 px-2 py-1 rounded-lg border border-emerald-300">+0.02 DOGE</span>
-                    </div>
-                    <p class="text-xs text-slate-600 leading-relaxed mb-4">
-                        Watch an ad or complete a villager chore to mine DOGE. Accumulate 1.0 DOGE to join the Water Well Pool or save 2.0 DOGE for direct withdrawal!
-                    </p>
-
-                    <!-- CAPTCHA VERIFICATION CONTAINER -->
-                    <div id="captcha-box" class="bg-slate-50 p-3 rounded-xl border border-slate-200 mb-4 flex items-center justify-between">
-                        <div class="flex items-center gap-2 text-xs font-bold text-slate-700">
-                            <input type="checkbox" id="captcha-check" class="w-4 h-4 rounded border-slate-300 text-amber-500 focus:ring-amber-400 cursor-pointer" onchange="toggleMiningButton()">
-                            <label for="captcha-check" class="cursor-pointer">I am a human (Anti-Bot Check)</label>
-                        </div>
-                        <span class="text-xs text-slate-400">🛡️ Protected</span>
-                    </div>
-
-                    <!-- MINING / AD REWARD BUTTON -->
-                    <button id="mine-btn" disabled onclick="mineDoge()" class="w-full bg-slate-300 text-slate-500 cursor-not-allowed font-bold py-3 px-4 rounded-xl cartoon-border cartoon-btn flex items-center justify-center gap-2 text-base">
-                        <i class="fa-solid fa-pickaxe"></i>
-                        <span id="mine-btn-text">Check CAPTCHA First</span>
-                    </button>
-                </div>
-
-                <!-- STATS & QUICK INFO -->
-                <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                    <span>Rate: 0.02 DOGE/claim</span>
-                    <span>Cooldown: 5 Seconds</span>
-                </div>
-            </div>
-
-            <!-- SECTION 2: THE DOGE WATER WELL QUEUE SYSTEM -->
-            <div class="bg-amber-50 rounded-2xl p-5 cartoon-border border-amber-300 flex flex-col justify-between space-y-4">
-                <div>
-                    <div class="flex items-center justify-between border-b-2 border-amber-200 pb-3 mb-3">
-                        <h2 class="text-lg font-bold text-amber-900 flex items-center gap-2">
-                            <span>🕳️</span> Water Well Pool (FIFO)
-                        </h2>
-                        <span class="text-xs font-bold bg-amber-200 text-amber-900 px-2 py-1 rounded-lg border border-amber-400">10x Multiplier</span>
-                    </div>
-
-                    <div class="bg-white p-3 rounded-xl border border-amber-200 text-xs text-slate-700 space-y-1 mb-4">
-                        <p class="font-bold text-amber-900">📜 Water Well Pool Rules:</p>
-                        <p>1. Deposit <strong>1.0 DOGE</strong> into the queue.</p>
-                        <p>2. When 10 players join (10 DOGE total), <strong>Position #1 wins 9.0 DOGE!</strong></p>
-                        <p>3. <strong>1.0 DOGE auto-reinvests</strong> back into the tail of the queue!</p>
-                    </div>
-
-                    <!-- ACTION BUTTONS -->
-                    <div class="space-y-2">
-                        <button id="deposit-pool-btn" onclick="depositToPool()" class="w-full bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold py-3 px-4 rounded-xl cartoon-border cartoon-btn flex items-center justify-center gap-2 text-sm">
-                            <span>🕳️ Deposit 1.0 DOGE to Water Well</span>
-                        </button>
-
-                        <button id="direct-withdraw-btn" onclick="openPayoutModal()" class="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-2.5 px-4 rounded-xl cartoon-border cartoon-btn flex items-center justify-center gap-2 text-xs">
-                            <span>💸 Direct Withdraw (Min 2.0 DOGE)</span>
-                        </button>
-                    </div>
-                </div>
-
-                <div id="queue-status-hint" class="text-xs text-center font-semibold text-amber-800">
-                    Need 1.0 DOGE balance to deposit into queue.
-                </div>
-            </div>
-
-        </div>
-
-        <!-- LIVE FIFO QUEUE BOARD -->
-        <section class="bg-white rounded-2xl p-5 cartoon-border space-y-4">
-            <div class="flex items-center justify-between border-b-2 border-slate-100 pb-3">
-                <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
-                    <span>📜</span> Live Water Well Queue Board (FIFO Order)
-                </h3>
-                <span class="text-xs text-slate-500">Auto-updates in real-time</span>
-            </div>
-
-            <!-- QUEUE LIST TABLE -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-100 text-[11px] font-bold text-slate-600 uppercase border-b border-slate-200">
-                            <th class="p-2.5 rounded-l-lg">Pos #</th>
-                            <th class="p-2.5">Player / Address</th>
-                            <th class="p-2.5">Entry Amount</th>
-                            <th class="p-2.5">Status</th>
-                            <th class="p-2.5 rounded-r-lg text-right">Estimated Payout</th>
-                        </tr>
-                    </thead>
-                    <tbody id="queue-table-body" class="text-xs divide-y divide-slate-100">
-                        <!-- Dynamic Queue Rows Generated by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
-
+      <div class="well-action-area">
+        <button class="well-btn" onclick="mineDoge()">🪣 Draw from Well (+0.02 DOGE)</button>
+      </div>
     </div>
 
-    <!-- FAUCETPAY WITHDRAWAL MODAL POPUP -->
-    <div id="faucetpay-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl max-w-md w-full p-6 cartoon-border space-y-4">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-                    <span class="text-emerald-500">💳</span> FaucetPay Direct Payout
-                </h3>
-                <button onclick="closePayoutModal()" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
-            </div>
+    <!-- Stats & Controls -->
+    <div class="ui-panel">
+      <div class="stats-box">
+        <div style="font-size: 11px; color: #666; text-transform: uppercase;">Your Balance</div>
+        <div class="balance-val"><span id="balance">0.0000</span> DOGE</div>
+        <div id="levelBadge" style="font-size: 12px; color: #bc6c25; font-weight: bold; margin-top: 3px;">🏠 Village Level 1</div>
+      </div>
 
-            <p class="text-xs text-slate-600">
-                Enter your FaucetPay registered email address to receive instant DOGE payouts. Minimum direct withdrawal is <strong>2.0 DOGE</strong>.
-            </p>
+      <div class="queue-info">
+        <b>🌊 Water Well Pool Queue:</b> <span id="poolCount">3</span> / 10 DOGE<br>
+        <span style="font-size: 11px; color: #7f4f24;">Rule: 1 DOGE entry = 9 DOGE win chance!</span>
+      </div>
 
-            <div class="space-y-2">
-                <label class="text-xs font-bold text-slate-700 block">FaucetPay Email Address</label>
-                <input type="email" id="fp-email" placeholder="user@example.com" class="w-full px-3 py-2 border-2 border-slate-300 rounded-xl focus:border-amber-400 focus:outline-none text-sm font-sans">
-            </div>
-
-            <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between">
-                <span>Available Balance:</span>
-                <strong id="modal-available-balance">0.00 DOGE</strong>
-            </div>
-
-            <div class="flex items-center justify-end gap-2 pt-2">
-                <button onclick="closePayoutModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
-                <button onclick="processFaucetPayWithdrawal()" class="bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-4 py-2 rounded-xl cartoon-border-sm text-xs">
-                    Confirm Payout
-                </button>
-            </div>
-        </div>
+      <div class="btn-group">
+        <button class="btn btn-pool" onclick="joinPool()">🏊 Join Pool (1 DOGE)</button>
+        <button class="btn btn-withdraw" onclick="openModal()">💸 Withdraw</button>
+      </div>
     </div>
+  </div>
 
-    <!-- JAVASCRIPT APP LOGIC -->
-    <script>
-        // APP STATE INITIALIZATION
-        let state = {
-            balance: parseFloat(localStorage.getItem('doge_balance')) || 0.00,
-            tickets: parseInt(localStorage.getItem('doge_tickets')) || 0,
-            level: parseInt(localStorage.getItem('doge_level')) || 1,
-            fpEmail: localStorage.getItem('doge_fp_email') || '',
-            queue: JSON.parse(localStorage.getItem('doge_queue')) || [
-                { id: 'bot_1', name: 'DogeMaster_99', amount: 1.0, isUser: false },
-                { id: 'bot_2', name: 'ShibaInu_King', amount: 1.0, isUser: false },
-                { id: 'bot_3', name: 'CryptoTrader', amount: 1.0, isUser: false },
-                { id: 'bot_4', name: 'MoonWalker', amount: 1.0, isUser: false },
-                { id: 'bot_5', name: 'HodlDoge', amount: 1.0, isUser: false },
-                { id: 'bot_6', name: 'SatoshisPup', amount: 1.0, isUser: false }
-            ]
-        };
+  <!-- FaucetPay Modal -->
+  <div id="withdrawModal" class="modal">
+    <div class="modal-content">
+      <h3>💸 FaucetPay Payout</h3>
+      <input type="email" id="faucetEmail" placeholder="Enter FaucetPay Email">
+      <button class="well-btn" style="width:100%; margin-top:5px;" onclick="submitWithdraw()">Submit Request</button>
+      <button class="well-btn" style="width:100%; margin-top:5px; background:#bc4749;" onclick="closeModal()">Cancel</button>
+    </div>
+  </div>
 
-        let cooldownTimer = null;
-        let isMining = false;
+  <script>
+    let balance = parseFloat(localStorage.getItem('doge_balance')) || 0.0000;
+    let level = parseInt(localStorage.getItem('doge_level')) || 1;
+    let clicks = parseInt(localStorage.getItem('doge_clicks')) || 0;
+    let poolCount = 3;
 
-        // ON LOAD INITIALIZATION
-        window.onload = function() {
-            updateUI();
-            startSimulatedCommunityActivity();
-        };
+    updateUI();
 
-        // SAVE STATE TO LOCALSTORAGE
-        function saveState() {
-            localStorage.setItem('doge_balance', state.balance.toFixed(4));
-            localStorage.setItem('doge_tickets', state.tickets);
-            localStorage.setItem('doge_level', state.level);
-            localStorage.setItem('doge_fp_email', state.fpEmail);
-            localStorage.setItem('doge_queue', JSON.stringify(state.queue));
-        }
+    // Automatic Waving and Inviting Animation every 1 Minute (60,000 ms)
+    setInterval(() => {
+      const bubble = document.getElementById('waveBubble');
+      bubble.style.display = 'block';
+      setTimeout(() => {
+        bubble.style.display = 'none';
+      }, 5000); // Bubble stays for 5 seconds
+    }, 60000);
 
-        // UPDATE ALL UI COMPONENTS
-        function updateUI() {
-            // Update Header Stats
-            document.getElementById('user-balance').innerText = state.balance.toFixed(2) + ' DOGE';
-            document.getElementById('user-tickets').innerText = state.tickets + ' Entries';
-            document.getElementById('user-level').innerText = 'Lv. ' + state.level + ' Villager';
+    function updateUI() {
+      document.getElementById('balance').innerText = balance.toFixed(4);
+      document.getElementById('levelBadge').innerText = `🏠 Village Level ${level}`;
+      document.getElementById('poolCount').innerText = poolCount;
+    }
 
-            // Update Water Well Visual Bar
-            const queueCount = state.queue.length;
-            const progressPercent = Math.min((queueCount / 10) * 100, 100);
-            document.getElementById('well-water-level-text').innerText = `${queueCount} / 10 DOGE`;
-            document.getElementById('queue-progress-bar').style.width = `${progressPercent}%`;
-            document.getElementById('queue-progress-text').innerText = `${Math.round(progressPercent)}%`;
-            document.getElementById('total-queue-count').innerText = `${queueCount} Players`;
+    function mineDoge() {
+      balance += 0.0200;
+      clicks++;
 
-            // Update Action Buttons State
-            const depositBtn = document.getElementById('deposit-pool-btn');
-            if (state.balance >= 1.0) {
-                depositBtn.disabled = false;
-                depositBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-                document.getElementById('queue-status-hint').innerText = "Ready to deposit 1.0 DOGE into queue!";
-            } else {
-                depositBtn.disabled = true;
-                depositBtn.classList.add('opacity-50', 'cursor-not-allowed');
-                document.getElementById('queue-status-hint').innerText = "Need 1.0 DOGE balance to deposit into queue.";
-            }
+      if (clicks % 5 === 0) {
+        level++;
+      }
 
-            renderQueueTable();
-            saveState();
-        }
+      localStorage.setItem('doge_balance', balance);
+      localStorage.setItem('doge_level', level);
+      localStorage.setItem('doge_clicks', clicks);
+      updateUI();
+    }
 
-        // RENDER LIVE FIFO QUEUE TABLE
-        function renderQueueTable() {
-            const tbody = document.getElementById('queue-table-body');
-            tbody.innerHTML = '';
+    function joinPool() {
+      if (balance < 1.0000) {
+        alert("⚠️ You need at least 1.00 DOGE to enter the Water Well Pool!");
+        return;
+      }
+      balance -= 1.0000;
+      poolCount++;
+      if (poolCount >= 10) {
+        alert("🎉 Pool Target Reached! #1 user won 9 DOGE, 1 DOGE re-invested!");
+        poolCount = 1;
+      }
+      localStorage.setItem('doge_balance', balance);
+      updateUI();
+    }
 
-            state.queue.forEach((entry, index) => {
-                const tr = document.createElement('tr');
-                const isWinnerSpot = index === 0;
+    function openModal() { document.getElementById('withdrawModal').style.display = 'flex'; }
+    function closeModal() { document.getElementById('withdrawModal').style.display = 'none'; }
 
-                tr.className = entry.isUser 
-                    ? 'bg-amber-100/80 font-bold border-l-4 border-amber-500' 
-                    : (isWinnerSpot ? 'bg-yellow-50 font-bold' : 'hover:bg-slate-50');
-
-                tr.innerHTML = `
-                    <td class="p-2.5">
-                        <span class="${isWinnerSpot ? 'bg-yellow-400 text-slate-900 font-extrabold' : 'bg-slate-200 text-slate-700'} px-2 py-0.5 rounded-full text-[10px]">
-                            #${index + 1} ${isWinnerSpot ? '👑 WINNER SPOT' : ''}
-                        </span>
-                    </td>
-                    <td class="p-2.5 flex items-center gap-2">
-                        <span>${entry.isUser ? '🐕 You (Villager)' : '🐶 ' + entry.name}</span>
-                        ${entry.isUser ? '<span class="text-[9px] bg-amber-300 text-amber-900 px-1.5 rounded">YOU</span>' : ''}
-                    </td>
-                    <td class="p-2.5">${entry.amount.toFixed(1)} DOGE</td>
-                    <td class="p-2.5">
-                        <span class="text-[10px] ${isWinnerSpot ? 'text-amber-800 font-bold' : 'text-slate-500'}">
-                            ${isWinnerSpot ? 'Receives 9.0 DOGE next!' : 'Waiting in Queue'}
-                        </span>
-                    </td>
-                    <td class="p-2.5 text-right font-bold ${isWinnerSpot ? 'text-emerald-600' : 'text-slate-700'}">
-                        ${isWinnerSpot ? '9.0 DOGE' : 'Pending'}
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
-
-        // ANTI-BOT & MINING LOGIC
-        function toggleMiningButton() {
-            const captchaChecked = document.getElementById('captcha-check').checked;
-            const mineBtn = document.getElementById('mine-btn');
-            const btnText = document.getElementById('mine-btn-text');
-
-            if (captchaChecked && !isMining) {
-                mineBtn.disabled = false;
-                mineBtn.classList.remove('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
-                mineBtn.classList.add('bg-emerald-500', 'hover:bg-emerald-400', 'text-white');
-                btnText.innerText = '⛏️ Mine / Watch Ad (+0.02 DOGE)';
-            } else {
-                mineBtn.disabled = true;
-                mineBtn.classList.add('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
-                mineBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-400', 'text-white');
-                btnText.innerText = isMining ? 'Cooling down...' : 'Check CAPTCHA First';
-            }
-        }
-
-        function mineDoge() {
-            if (isMining) return;
-
-            isMining = true;
-            state.balance += 0.02;
-            updateUI();
-
-            // COOLDOWN TIMER SETUP (5 SECONDS)
-            let timeLeft = 5;
-            const mineBtn = document.getElementById('mine-btn');
-            const btnText = document.getElementById('mine-btn-text');
-            
-            mineBtn.disabled = true;
-            mineBtn.classList.add('bg-slate-300', 'text-slate-500', 'cursor-not-allowed');
-            mineBtn.classList.remove('bg-emerald-500', 'hover:bg-emerald-400', 'text-white');
-
-            cooldownTimer = setInterval(() => {
-                btnText.innerText = `⏳ Cooldown (${timeLeft}s)`;
-                timeLeft--;
-
-                if (timeLeft < 0) {
-                    clearInterval(cooldownTimer);
-                    isMining = false;
-                    document.getElementById('captcha-check').checked = false;
-                    toggleMiningButton();
-                }
-            }, 1000);
-        }
-
-        // WATER WELL POOL DEPOSIT & FIFO CYCLE LOGIC
-        function depositToPool() {
-            if (state.balance < 1.0) {
-                showToast("Insufficient balance! You need 1.0 DOGE.");
-                return;
-            }
-
-            // Deduct 1.0 DOGE
-            state.balance -= 1.0;
-            state.tickets += 1;
-
-            // Add user entry to tail of queue
-            state.queue.push({
-                id: 'user_' + Date.now(),
-                name: 'You (Villager)',
-                amount: 1.0,
-                isUser: true
-            });
-
-            showToast("Successfully deposited 1.0 DOGE to Water Well Pool!");
-            
-            // Check if queue reaches target (10 DOGE)
-            checkQueueCycle();
-            updateUI();
-        }
-
-        // CHECK FIFO CYCLE COMPLETION
-        function checkQueueCycle() {
-            if (state.queue.length >= 10) {
-                // Winner at position #1
-                const winner = state.queue[0];
-
-                if (winner.isUser) {
-                    // User wins 9.0 DOGE!
-                    state.balance += 9.0;
-                    showToast("🎉 CONGRATULATIONS! You reached #1 in Water Well and won 9.0 DOGE!");
-                    // Level up
-                    state.level += 1;
-                } else {
-                    showToast(`🔔 Queue full! Player ${winner.name} won 9.0 DOGE!`);
-                }
-
-                // 1 DOGE auto-reinvested to tail (duplicate entry)
-                const autoReinvestEntry = {
-                    id: winner.id + '_reinvest',
-                    name: winner.name + ' (Auto-Reinvest)',
-                    amount: 1.0,
-                    isUser: winner.isUser
-                };
-
-                // Pop winner from head (FIFO)
-                state.queue.shift();
-
-                // Append reinvested entry to tail
-                state.queue.push(autoReinvestEntry);
-            }
-        }
-
-        // WAVING ANIMATION FEATURE (5 SECONDS)
-        function triggerWavingAnimation() {
-            const nearAvatar = document.getElementById('doge-near-avatar');
-            const farAvatar = document.getElementById('doge-far-avatar');
-            const nearChat = document.getElementById('near-chat');
-            const farChat = document.getElementById('far-chat');
-
-            nearAvatar.classList.add('is-waving');
-            farAvatar.classList.add('is-waving');
-
-            nearChat.innerText = "👋 Come over! Water Well pays 10x!";
-            farChat.innerText = "🏃 Coming! Putting 1 DOGE in!";
-
-            setTimeout(() => {
-                nearAvatar.classList.remove('is-waving');
-                farAvatar.classList.remove('is-waving');
-                nearChat.innerText = "Jump in! 10x Pool filling up! 🌊";
-                farChat.innerText = "Should I deposit 1 DOGE? 🤔";
-            }, 5000);
-        }
-
-        // SIMULATED COMMUNITY ACTIVITY (BOTS DEPOSITING PERIODICALLY)
-        function startSimulatedCommunityActivity() {
-            setInterval(() => {
-                if (state.queue.length < 10) {
-                    const randomBotNames = ['AlphaDoge', 'CryptoBark', 'ToTheMoon_Doge', 'SatoshiPup', 'GoldMiner_99'];
-                    const botName = randomBotNames[Math.floor(Math.random() * randomBotNames.length)];
-
-                    state.queue.push({
-                        id: 'bot_' + Date.now(),
-                        name: botName,
-                        amount: 1.0,
-                        isUser: false
-                    });
-
-                    checkQueueCycle();
-                    updateUI();
-                }
-            }, 12000); // Simulated entry every 12 seconds
-        }
-
-        // FAUCETPAY WITHDRAWAL MODAL & PROCESS
-        function openPayoutModal() {
-            if (state.balance < 2.0) {
-                showToast("Minimum direct withdrawal is 2.0 DOGE.");
-                return;
-            }
-            document.getElementById('modal-available-balance').innerText = state.balance.toFixed(2) + ' DOGE';
-            document.getElementById('fp-email').value = state.fpEmail;
-            document.getElementById('faucetpay-modal').classList.remove('hidden');
-        }
-
-        function closePayoutModal() {
-            document.getElementById('faucetpay-modal').classList.add('hidden');
-        }
-
-        function processFaucetPayWithdrawal() {
-            const email = document.getElementById('fp-email').value.trim();
-            if (!email || !email.includes('@')) {
-                showToast("Please enter a valid FaucetPay email address.");
-                return;
-            }
-
-            state.fpEmail = email;
-            const withdrawAmount = state.balance;
-            state.balance = 0.0;
-
-            saveState();
-            updateUI();
-            closePayoutModal();
-
-            showToast(`✅ Payout of ${withdrawAmount.toFixed(2)} DOGE sent to FaucetPay (${email})!`);
-        }
-
-        // SIMPLE TOAST NOTIFICATION HELPERS
-        function showToast(message) {
-            const toast = document.createElement('div');
-            toast.className = 'fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl cartoon-border z-50 text-xs font-bold animate-bounce-short';
-            toast.innerText = message;
-            document.body.appendChild(toast);
-            setTimeout(() => toast.remove(), 4000);
-        }
-    </script>
+    function submitWithdraw() {
+      const email = document.getElementById('faucetEmail').value;
+      if (!email.includes('@')) {
+        alert("Please enter valid email!");
+        return;
+      }
+      if (balance < 2.0000) {
+        alert("⚠️ Minimum withdrawal is 2.00 DOGE!");
+        return;
+      }
+      alert(`🎉 Success! Withdrawal request sent to ${email}`);
+      balance = 0;
+      localStorage.setItem('doge_balance', balance);
+      updateUI();
+      closeModal();
+    }
+  </script>
 </body>
 </html>
