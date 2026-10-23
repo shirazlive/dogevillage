@@ -13,20 +13,20 @@
     }
 
     body {
-      background: #1e1b18;
+      background: #70c5ce;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: 0;
       overflow-x: hidden;
     }
 
+    /* Native 2D Cartoon Village Background */
     .village-fullscreen {
       position: relative;
       width: 100vw;
       height: 100vh;
-      background: url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1600&auto=format&fit=crop') no-repeat center center/cover;
+      background: linear-gradient(180deg, #4facfe 0%, #00f2fe 45%, #a8e063 45%, #56ab2f 100%);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -34,56 +34,108 @@
       padding: 20px;
     }
 
-    /* Top Village Header */
+    /* Sun in Sky */
+    .sun {
+      position: absolute;
+      top: 25px;
+      right: 40px;
+      width: 60px;
+      height: 60px;
+      background: #ffdd59;
+      border-radius: 50%;
+      box-shadow: 0 0 30px #ffdd59;
+    }
+
+    /* Top Village Header Signboard */
     .village-header {
-      background: rgba(139, 69, 19, 0.85);
-      border: 3px dashed #ffd700;
+      background: #8b4513;
+      border: 4px solid #d4a373;
       padding: 10px 25px;
       border-radius: 15px;
       color: #fffae6;
       text-align: center;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      z-index: 5;
     }
 
     .village-header h1 {
       font-size: 24px;
       font-weight: 800;
       text-shadow: 2px 2px #000;
+      color: #ffe6a7;
+    }
+
+    /* Cartoon Doge Well Visual Area */
+    .well-scene {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin-top: 10px;
+      z-index: 5;
+    }
+
+    .cartoon-well {
+      font-size: 80px;
+      line-height: 1;
+      filter: drop-shadow(0 10px 8px rgba(0,0,0,0.3));
+      cursor: pointer;
+      transition: transform 0.1s ease;
+    }
+
+    .cartoon-well:active {
+      transform: scale(1.1);
+    }
+
+    /* Villagers Animation / Waving area */
+    .villagers-group {
+      display: flex;
+      gap: 30px;
+      margin-top: -10px;
+      align-items: flex-end;
+    }
+
+    .villager {
+      font-size: 35px;
+      position: relative;
     }
 
     /* Floating Chat Bubble for Waving */
     .wave-bubble {
       position: absolute;
-      top: 30%;
+      top: -35px;
+      left: 50%;
+      transform: translateX(-50%);
       background: #fff;
       color: #333;
-      padding: 8px 16px;
-      border-radius: 20px;
-      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 15px;
+      font-size: 11px;
       font-weight: bold;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      white-space: nowrap;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
       border: 2px solid #f77f00;
       animation: bounce 1.5s infinite;
       display: none;
-      z-index: 10;
     }
 
     @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
+      0%, 100% { transform: translate(-50%, 0); }
+      50% { transform: translate(-50%, -6px); }
     }
 
     /* Bottom Control Dashboard Overlay */
     .dashboard-panel {
-      background: rgba(255, 248, 231, 0.95);
+      background: rgba(255, 248, 231, 0.96);
       border: 4px solid #d4a373;
       border-radius: 25px;
       padding: 20px;
       width: 100%;
       max-width: 420px;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.6);
-      backdrop-filter: blur(5px);
-      margin-bottom: 10px;
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+      z-index: 5;
+      margin-bottom: 5px;
     }
 
     .stats-row {
@@ -93,7 +145,7 @@
       background: #fefae0;
       border: 2px solid #dda15e;
       border-radius: 15px;
-      padding: 12px 18px;
+      padding: 10px 18px;
       margin-bottom: 12px;
     }
 
@@ -108,7 +160,7 @@
       border-radius: 12px;
       padding: 10px 15px;
       font-size: 13px;
-      margin-bottom: 15px;
+      margin-bottom: 12px;
       border: 1px solid #ccd5ae;
       text-align: center;
     }
@@ -116,12 +168,12 @@
     .btn-grid {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
     }
 
     .btn {
       width: 100%;
-      padding: 14px;
+      padding: 12px;
       font-size: 15px;
       font-weight: bold;
       border: none;
@@ -175,14 +227,28 @@
 <body>
 
   <div class="village-fullscreen">
+    <div class="sun"></div>
+
     <!-- Header Board -->
     <div class="village-header">
       <h1>🪵 Doge Well Village</h1>
       <div style="font-size: 12px; color: #ffe6a7;">Pool • Play • Earn • Win</div>
     </div>
 
-    <!-- Auto Waving Chat Bubble -->
-    <div id="waveBubble" class="wave-bubble">👋 Aajaao yaar, pool mein 10x jeeto!</div>
+    <!-- 2D Cartoon Scene with Doge Well & Villagers -->
+    <div class="well-scene">
+      <div class="cartoon-well" onclick="mineDoge()" title="Click Well to Draw DOGE!">🪣</div>
+      <div style="font-size: 12px; font-weight: bold; color: #fff; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; margin-top: 4px;">DOGE WATER WELL</div>
+
+      <div class="villagers-group">
+        <div class="villager" id="nearVillager">
+          🐶
+          <div id="waveBubble" class="wave-bubble">👋 Aajaao, Pool mein 10x chance hai!</div>
+        </div>
+        <div class="villager">👨‍🌾</div>
+        <div class="villager">👵</div>
+      </div>
+    </div>
 
     <!-- Bottom Interactive Dashboard -->
     <div class="dashboard-panel">
