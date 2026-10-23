@@ -12,15 +12,15 @@
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    body, html {
+    html, body {
       width: 100%;
       min-height: 100vh;
-      overflow-x: hidden;
+      overflow-x: auto;
       overflow-y: auto;
       background: #111;
     }
 
-    /* Fullscreen Village Background Container with Full View */
+    /* Fullscreen Responsive Background View */
     .village-fullscreen {
       position: relative;
       width: 100vw;
@@ -31,63 +31,23 @@
       background-size: cover;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
-      align-items: center;
-      padding: 20px 15px;
+      justify-content: space-between;
+      padding: 20px;
     }
 
-    /* Auto Waving Chat Bubble (1 min interval) */
-    .wave-bubble {
-      position: absolute;
-      top: 48%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(255, 255, 255, 0.95);
-      color: #333;
-      padding: 10px 18px;
-      border-radius: 20px;
-      font-size: 13px;
-      font-weight: 800;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.5);
-      border: 3px solid #f77f00;
-      animation: pulseWave 1.5s infinite alternate;
-      display: none;
-      z-index: 10;
-      text-align: center;
-    }
-
-    @keyframes pulseWave {
-      0% { transform: translate(-50%, -50%) scale(0.95); }
-      100% { transform: translate(-50%, -50%) scale(1.05); }
-    }
-
-    /* Clickable area over center Doge Well */
-    .well-click-target {
-      position: absolute;
-      top: 52%;
-      left: 58%;
-      transform: translate(-50%, -50%);
-      width: 280px;
-      height: 250px;
-      cursor: pointer;
-      z-index: 8;
-      border-radius: 50%;
-    }
-
-    /* Dashboard Overlay Positioned at Bottom */
+    /* Top Right Compact Dashboard Panel */
     .dashboard-panel {
-      position: relative;
+      position: absolute;
+      top: 20px;
+      right: 20px;
       z-index: 10;
       background: rgba(30, 20, 10, 0.88);
-      border: 3px solid #dda15e;
-      border-radius: 20px;
-      padding: 14px 18px;
-      width: 100%;
-      max-width: 440px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
-      backdrop-filter: blur(6px);
-      margin-top: auto;
-      margin-bottom: 10px;
+      border: 2px solid #dda15e;
+      border-radius: 16px;
+      padding: 12px 14px;
+      width: 290px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+      backdrop-filter: blur(5px);
       color: #fff;
     }
 
@@ -97,13 +57,13 @@
       align-items: center;
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid #dda15e;
-      border-radius: 12px;
-      padding: 8px 14px;
-      margin-bottom: 10px;
+      border-radius: 10px;
+      padding: 6px 10px;
+      margin-bottom: 8px;
     }
 
     .balance-val {
-      font-size: 22px;
+      font-size: 18px;
       font-weight: 800;
       color: #2ed573;
       text-shadow: 1px 1px 2px #000;
@@ -111,10 +71,10 @@
 
     .queue-box {
       background: rgba(212, 163, 115, 0.25);
-      border-radius: 10px;
-      padding: 8px 12px;
-      font-size: 12px;
-      margin-bottom: 10px;
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11px;
+      margin-bottom: 8px;
       border: 1px solid #dda15e;
       text-align: center;
       color: #fffae6;
@@ -122,19 +82,20 @@
 
     .btn-grid {
       display: flex;
-      gap: 8px;
+      flex-direction: column;
+      gap: 6px;
     }
 
     .btn {
-      flex: 1;
-      padding: 11px 6px;
-      font-size: 12px;
+      width: 100%;
+      padding: 8px 6px;
+      font-size: 11px;
       font-weight: bold;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       cursor: pointer;
       color: white;
-      box-shadow: 0 4px 0px rgba(0,0,0,0.3);
+      box-shadow: 0 3px 0px rgba(0,0,0,0.3);
       transition: all 0.1s ease;
       text-shadow: 1px 1px 1px #000;
     }
@@ -147,6 +108,44 @@
     .btn-well { background: #e67e22; box-shadow: 0 3px 0px #d35400; }
     .btn-pool { background: #27ae60; box-shadow: 0 3px 0px #1e8449; }
     .btn-withdraw { background: #2980b9; box-shadow: 0 3px 0px #1c5980; }
+
+    /* Interactive Well Tap Target */
+    .well-click-target {
+      position: absolute;
+      top: 50%;
+      left: 58%;
+      transform: translate(-50%, -50%);
+      width: 280px;
+      height: 250px;
+      cursor: pointer;
+      z-index: 8;
+      border-radius: 50%;
+    }
+
+    /* Auto Waving Chat Bubble (1 min interval) */
+    .wave-bubble {
+      position: absolute;
+      top: 42%;
+      left: 58%;
+      transform: translate(-50%, -50%);
+      background: rgba(255, 255, 255, 0.95);
+      color: #333;
+      padding: 8px 14px;
+      border-radius: 16px;
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+      border: 2px solid #f77f00;
+      animation: pulseWave 1.5s infinite alternate;
+      display: none;
+      z-index: 10;
+      text-align: center;
+    }
+
+    @keyframes pulseWave {
+      0% { transform: translate(-50%, -50%) scale(0.95); }
+      100% { transform: translate(-50%, -50%) scale(1.05); }
+    }
 
     /* Modal */
     .modal {
@@ -162,21 +161,21 @@
     .modal-content {
       background: #2b1d0e;
       padding: 20px;
-      border-radius: 18px;
+      border-radius: 16px;
       width: 90%;
-      max-width: 330px;
+      max-width: 300px;
       text-align: center;
-      border: 3px solid #dda15e;
+      border: 2px solid #dda15e;
       color: #fff;
     }
 
     .modal-content input {
       width: 100%;
-      padding: 10px;
-      margin: 12px 0;
+      padding: 8px;
+      margin: 10px 0;
       border: 2px solid #dda15e;
       border-radius: 8px;
-      font-size: 14px;
+      font-size: 13px;
       background: #fff;
       color: #000;
     }
@@ -186,47 +185,47 @@
 
   <div class="village-fullscreen">
 
-    <!-- Invisible Click Target over center Doge Well -->
-    <div class="well-click-target" onclick="mineDoge()" title="Tap Doge Well to Draw DOGE!"></div>
-
-    <!-- Auto Waving Chat Bubble (Every 1 Minute) -->
-    <div id="waveBubble" class="wave-bubble">👋 Aajaao sab! Pool Queue mein 10x chance hai! 🌊</div>
-
-    <!-- Bottom Dashboard Overlay -->
+    <!-- Top Right Compact Control Dashboard -->
     <div class="dashboard-panel">
       <div class="stats-row">
         <div>
-          <div style="font-size: 10px; color: #ccc; text-transform: uppercase; font-weight: bold;">Your Balance</div>
+          <div style="font-size: 9px; color: #ccc; text-transform: uppercase; font-weight: bold;">Your Balance</div>
           <div class="balance-val"><span id="balance">0.0000</span> DOGE</div>
         </div>
         <div style="text-align: right;">
-          <div id="levelBadge" style="font-size: 12px; color: #f39c12; font-weight: bold;">🏠 Level 1</div>
-          <div style="font-size: 10px; color: #bbb;">Active Miner</div>
+          <div id="levelBadge" style="font-size: 11px; color: #f39c12; font-weight: bold;">🏠 Level 1</div>
+          <div style="font-size: 9px; color: #bbb;">Active Miner</div>
         </div>
       </div>
 
       <div class="queue-box">
-        <b>🌊 Water Well Pool Queue:</b> <span id="poolCount">3</span> / 10 DOGE<br>
-        <span style="font-size: 11px; color: #f1c40f;">1 DOGE Entry = 9 DOGE Win Chance!</span>
+        <b>🌊 Pool Queue:</b> <span id="poolCount">3</span> / 10 DOGE<br>
+        <span style="font-size: 10px; color: #f1c40f;">1 DOGE = 9 DOGE Win Chance</span>
       </div>
 
       <div class="btn-grid">
-        <button class="btn btn-well" onclick="mineDoge()">🪣 Draw (+0.02)</button>
+        <button class="btn btn-well" onclick="mineDoge()">🪣 Draw DOGE (+0.02)</button>
         <button class="btn btn-pool" onclick="joinPool()">🏊 Join Pool (1 DOGE)</button>
-        <button class="btn btn-withdraw" onclick="openModal()">💸 Withdraw</button>
+        <button class="btn btn-withdraw" onclick="openModal()">💸 Withdraw to FaucetPay</button>
       </div>
     </div>
+
+    <!-- Invisible Tap Area over Center Doge Well -->
+    <div class="well-click-target" onclick="mineDoge()" title="Tap Doge Well to Draw DOGE!"></div>
+
+    <!-- Auto Waving Chat Bubble (Every 1 Minute) -->
+    <div id="waveBubble" class="wave-bubble">👋 Aajaao sab! Pool Queue mein 10x chance hai! 🌊</div>
 
   </div>
 
   <!-- FaucetPay Modal -->
   <div id="withdrawModal" class="modal">
     <div class="modal-content">
-      <h3 style="color: #f39c12; margin-bottom: 5px;">💸 FaucetPay Payout</h3>
-      <p style="font-size: 12px; color: #ccc;">Enter your registered FaucetPay email.</p>
+      <h3 style="color: #f39c12; margin-bottom: 5px; font-size: 16px;">💸 FaucetPay Payout</h3>
+      <p style="font-size: 11px; color: #ccc;">Enter registered FaucetPay email.</p>
       <input type="email" id="faucetEmail" placeholder="example@gmail.com">
-      <button class="btn btn-pool" style="width:100%; margin-top: 5px;" onclick="submitWithdraw()">Submit Payout Request</button>
-      <button class="btn" style="width:100%; background: #c0392b; margin-top: 8px;" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-pool" style="width:100%; margin-top: 5px;" onclick="submitWithdraw()">Submit Request</button>
+      <button class="btn" style="width:100%; background: #c0392b; margin-top: 6px;" onclick="closeModal()">Cancel</button>
     </div>
   </div>
 
@@ -238,7 +237,7 @@
 
     updateUI();
 
-    // Automatic Waving and Inviting Animation every 1 Minute (60,000 ms)
+    // Automatic Waving Chat Bubble (Every 1 Minute / 60000ms)
     setInterval(() => {
       const bubble = document.getElementById('waveBubble');
       bubble.style.display = 'block';
