@@ -14,25 +14,26 @@
 
     body, html {
       width: 100%;
-      height: 100%;
-      overflow: hidden;
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
       background: #111;
     }
 
-    /* Embedded HD Village View */
+    /* Fullscreen Village Background Container with Full View */
     .village-fullscreen {
       position: relative;
       width: 100vw;
-      height: 100vh;
+      min-height: 100vh;
       background: url('village.png') no-repeat center center/cover,
                   url('https://lh3.googleusercontent.com/d/1000552249') no-repeat center center/cover,
                   #70c5ce;
       background-size: cover;
       display: flex;
       flex-direction: column;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
-      padding: 15px;
+      padding: 20px 15px;
     }
 
     /* Auto Waving Chat Bubble (1 min interval) */
@@ -60,32 +61,33 @@
       100% { transform: translate(-50%, -50%) scale(1.05); }
     }
 
-    /* Clickable target over Doge Well in the image */
+    /* Clickable area over center Doge Well */
     .well-click-target {
       position: absolute;
-      top: 45%;
-      left: 50%;
+      top: 52%;
+      left: 58%;
       transform: translate(-50%, -50%);
-      width: 260px;
-      height: 220px;
+      width: 280px;
+      height: 250px;
       cursor: pointer;
       z-index: 8;
       border-radius: 50%;
     }
 
-    /* Dashboard Overlay at Bottom */
+    /* Dashboard Overlay Positioned at Bottom */
     .dashboard-panel {
       position: relative;
       z-index: 10;
-      background: rgba(43, 29, 14, 0.88);
+      background: rgba(30, 20, 10, 0.88);
       border: 3px solid #dda15e;
       border-radius: 20px;
       padding: 14px 18px;
       width: 100%;
-      max-width: 420px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      max-width: 440px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.7);
       backdrop-filter: blur(6px);
-      margin-bottom: 5px;
+      margin-top: auto;
+      margin-bottom: 10px;
       color: #fff;
     }
 
