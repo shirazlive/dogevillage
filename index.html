@@ -14,20 +14,19 @@
 
     html, body {
       width: 100%;
-      min-height: 100vh;
-      overflow-x: auto;
-      overflow-y: auto;
+      height: 100%;
+      overflow: auto;
       background: #111;
     }
 
-    /* Fullscreen Responsive Background View */
+    /* Flexible Village Container with Full Scroll Support */
     .village-fullscreen {
       position: relative;
-      width: 100vw;
-      min-height: 100vh;
-      background: url('village.png') no-repeat center center/cover,
-                  url('https://lh3.googleusercontent.com/d/1000552249') no-repeat center center/cover,
-                  #70c5ce;
+      width: 100%;
+      min-width: 1100px;
+      min-height: 700px;
+      height: 100vh;
+      background: url('village.png') no-repeat center center;
       background-size: cover;
       display: flex;
       flex-direction: column;
@@ -41,7 +40,7 @@
       top: 20px;
       right: 20px;
       z-index: 10;
-      background: rgba(30, 20, 10, 0.88);
+      background: rgba(30, 20, 10, 0.9);
       border: 2px solid #dda15e;
       border-radius: 16px;
       padding: 12px 14px;
