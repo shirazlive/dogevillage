@@ -1,4 +1,36 @@
-position: relative;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doge Village - Crypto Idle Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #70c5ce 0%, #a2e2b7 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .game-card {
+      background: #ffffff;
+      border-radius: 24px;
+      padding: 28px;
+      width: 100%;
+      max-width: 420px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+      text-align: center;
+      border: 4px solid #f7b731;
+      position: relative;
     }
 
     .header-title {
@@ -25,6 +57,91 @@ position: relative;
       border-radius: 20px;
       margin-bottom: 15px;
       text-transform: uppercase;
+    }
+
+    .village-scene {
+      background: #eccc68;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+      position: relative;
+      border: 3px dashed #ffa502;
+    }
+
+    .doge-avatar {
+      font-size: 70px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.1s ease;
+      display: inline-block;
+    }
+
+    .doge-avatar:active {
+      transform: scale(1.2) rotate(5deg);
+    }
+
+    .stats-container {
+      background: #f1f2f6;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 20px;
+    }
+
+    .balance-title {
+      font-size: 12px;
+      color: #747d8c;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .balance-amount {
+      font-size: 32px;
+      font-weight: 800;
+      color: #2ed573;
+      margin: 4px 0;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 0px rgba(0,0,0,0.2);
+    }
+
+    .btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0px rgba(0,0,0,0.2);
+    }
+
+    .btn-mine {
+      background: #ffa502;
+      color: #fff;
+    }
+
+    .btn-mine:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-withdraw {
+      background: #2ed573;
+      color: #fff;
+    }
+
+    .toast {
+      font-size: 13px;
+      color: #2f3542;
+      height: 20px;
+      margin-top: 5px;
+    }
+
     /* Modal Styles */
     .modal {
       display: none;
@@ -120,7 +237,6 @@ position: relative;
       balance += 0.0200;
       clicks++;
 
-      // Level up logic (Every 5 clicks increases level)
       if (clicks % 5 === 0) {
         level++;
         showToast(`🎉 Level Up! You reached Level ${level}!`);
@@ -134,12 +250,10 @@ position: relative;
 
       updateUI();
 
-      // Doge animation
       const doge = document.getElementById('doge');
       doge.style.transform = 'scale(1.3)';
       setTimeout(() => doge.style.transform = 'scale(1)', 150);
 
-      // Cooldown timer
       isCooldown = true;
       const btn = document.getElementById('mineBtn');
       btn.disabled = true;
