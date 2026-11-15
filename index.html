@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Doge Village - Doge Well Queue & Classic Ludo</title>
+  <title>Doge Village - Doge Well & Classic Ludo</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -256,7 +256,8 @@
       font-size: 11px;
       font-weight: bold;
     }
-    .leg-item { padding: 4px 6px; border-radius: 6px; color: #fff; text-shadow: 1px 1px 1px #000; }
+    .leg-item { padding: 5px 6px; border-radius: 6px; color: #fff; text-shadow: 1px 1px 1px #000; cursor: pointer; transition: transform 0.1s; }
+    .leg-item:active { transform: scale(0.96); }
   </style>
 </head>
 <body>
@@ -326,7 +327,7 @@
     </div>
   </div>
 
-  <!-- CLASSIC LUDO BOARD MODAL WITH PERMANENT AUTOPILOT -->
+  <!-- CLASSIC LUDO BOARD MODAL WITH TOGGLEABLE AUTOPILOT -->
   <div id="ludoModal" class="modal">
     <div class="ludo-modal-box">
       <canvas id="ludoCanvas" width="450" height="450"></canvas>
@@ -337,7 +338,7 @@
         <div id="timerBadge" class="timer-badge">⏳ Turn Time Left: 30s</div>
 
         <div class="player-legend">
-          <div id="leg0" class="leg-item" style="background:#e74c3c;">🔴 You (Red)</div>
+          <div id="leg0" class="leg-item" style="background:#e74c3c;" onclick="toggleBotMode()" title="Click to switch Bot / Manual">🔴 You (Red)</div>
           <div id="leg1" class="leg-item" style="background:#27ae60;">🟢 Ali (Green)</div>
           <div id="leg2" class="leg-item" style="background:#f39c12;">🟡 Sara (Yellow)</div>
           <div id="leg3" class="leg-item" style="background:#2980b9;">🔵 Khan (Blue)</div>
@@ -348,7 +349,7 @@
           <button id="rollDiceBtn" class="btn btn-ludo" style="width: auto; padding: 12px 16px; font-size: 13px;" onclick="handleHumanRoll()">🎲 ROLL DICE</button>
         </div>
 
-        <div style="font-size: 11px; color: #f1c40f;" id="actionHint">Click ROLL DICE! (30s Autopilot active)</div>
+        <div style="font-size: 11px; color: #f1c40f;" id="actionHint">Click ROLL DICE! (Click Red badge to toggle Bot)</div>
         <div class="ludo-status-log" id="ludoLog">Match started! First to bring all 4 tokens Home wins 3.5 DOGE!</div>
       </div>
     </div>
@@ -429,26 +430,23 @@
       }
     }
 
-    // Doge Well 10x Pool Queue Feature
     async function joinWellPool() {
       if (!currentUser) return alert("Please login first!");
       if (playerData.playable_balance < 1.0000) {
-        return alert("⚠️ You need at least 1.00 DOGE in your balance to join the Well Pool! Take a loan or watch ads.");
+        return alert("⚠️ You need at least 1.00 DOGE in your balance to join the Well Pool!");
       }
 
-      // Deduct 1 DOGE from balance locally & update queue
       playerData.playable_balance -= 1.0000;
       poolCount++;
 
       if (poolCount >= 10) {
         playerData.playable_balance += 10.0000;
-        alert("🎉 DOGE Well Target Reached (10/10)!\nCongratulations! You won 10.00 DOGE and automatically re-entered the queue!");
+        alert("🎉 DOGE Well Target Reached (10/10)!\nYou won 10.00 DOGE!");
         poolCount = 1;
       } else {
-        alert("✅ Successfully added 1 DOGE to Doge Well Queue! Current Pool: " + poolCount + "/10");
+        alert("✅ Added 1 DOGE to Well Queue! Pool: " + poolCount + "/10");
       }
 
-      // Sync with Supabase table balance
       await db.from('players').update({ playable_balance: playerData.playable_balance }).eq('id', currentUser.id);
       document.getElementById('balance').innerText = Number(playerData.playable_balance).toFixed(4);
       document.getElementById('poolCount').innerText = poolCount;
@@ -479,7 +477,7 @@
     async function takeLoan() {
       if (!currentUser) return alert("Please login first!");
       if (playerData.playable_balance >= 1.0000) {
-        return alert("⚠️ Your balance is already 1.00 DOGE or more! Loans are only for players with balance < 1.00 DOGE.");
+        return alert("⚠️ Your balance is 1.00 DOGE or more! Loans are only for balance < 1.00 DOGE.");
       }
       const { data, error } = await db.rpc('borrow_doge');
       if (error) return alert(error.message);
@@ -487,23 +485,32 @@
       await loadPlayerWallet();
     }
 
-    // Separate Manual Repay Loan Function
+    // FIXED REPAY LOAN FUNCTION (Accurate Math & Database Sync)
     async function repayLoanManual() {
       if (!currentUser) return alert("Please login first!");
-      if (playerData.loan_debt <= 0) return alert("You have no active loan debt to repay!");
-      if (playerData.playable_balance < 1.0000) {
-        return alert("⚠️ You need at least 1.00 DOGE playable balance to repay 1 DOGE loan!");
+      let debt = Number(playerData.loan_debt);
+      let balance = Number(playerData.playable_balance);
+
+      if (debt <= 0) return alert("You have no active loan debt to repay!");
+      
+      // Repay up to 1 DOGE (or remaining debt if less than 1)
+      let repayAmount = debt >= 1.0000 ? 1.0000 : debt;
+
+      if (balance < repayAmount) {
+        return alert(`⚠️ Insufficient balance! You need at least ${repayAmount.toFixed(4)} DOGE playable balance to repay this loan portion.`);
       }
 
-      playerData.playable_balance -= 1.0000;
-      playerData.loan_debt -= 1.0000;
+      playerData.playable_balance = balance - repayAmount;
+      playerData.loan_debt = debt - repayAmount;
 
-      await db.from('players').update({
+      const { error } = await db.from('players').update({
         playable_balance: playerData.playable_balance,
         loan_debt: playerData.loan_debt
       }).eq('id', currentUser.id);
 
-      alert("✅ 1.00 DOGE loan successfully repaid!");
+      if (error) return alert("Error updating database: " + error.message);
+
+      alert(`✅ Successfully repaid ${repayAmount.toFixed(4)} DOGE loan!`);
       await loadPlayerWallet();
     }
 
@@ -521,7 +528,7 @@
     }
 
     // ==========================================
-    // CLASSIC LUDO BOARD & PERMANENT AUTOPILOT ENGINE
+    // CLASSIC LUDO BOARD & TOGGLEABLE BOT ENGINE
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
     const ctx = canvas.getContext('2d');
@@ -571,7 +578,7 @@
     let ludoRunning = false;
     let turnTimerInterval = null;
     let timeLeft = 30;
-    let botActiveFlags = [false, false, false, false]; // Permanent Bot / Autopilot flags
+    let botActiveFlags = [false, false, false, false];
 
     async function startLudoMatch() {
       if (!currentUser) return alert("Please login first!");
@@ -595,10 +602,30 @@
       startTurnTimer();
     }
 
+    // TOGGLE BOT MODE ON CLICKING LEGEND BADGE
+    function toggleBotMode() {
+      if (!ludoRunning) return;
+      botActiveFlags[0] = !botActiveFlags[0];
+      if (botActiveFlags[0]) {
+        document.getElementById('leg0').innerText = "🔴 You (Red) 🤖 [Bot Active]";
+        logLudo("🤖 Autopilot enabled manually.");
+        clearInterval(turnTimerInterval);
+        if (currentTurn === 0) {
+          setTimeout(() => runBotTurn(0), 500);
+        }
+      } else {
+        document.getElementById('leg0').innerText = "🔴 You (Red)";
+        logLudo("👤 Switched back to Manual mode!");
+        if (currentTurn === 0) {
+          startTurnTimer();
+        }
+      }
+      updateTurnUI();
+    }
+
     function startTurnTimer() {
       clearInterval(turnTimerInterval);
       if (botActiveFlags[currentTurn]) {
-        // If this player is permanently on autopilot, skip timer and take bot turn instantly
         setTimeout(() => runBotTurn(currentTurn), 500);
         return;
       }
@@ -617,9 +644,9 @@
         if (timeLeft <= 0) {
           clearInterval(turnTimerInterval);
           if (currentTurn === 0 && !botActiveFlags[0]) {
-            botActiveFlags[0] = true; // Permanently enable bot mode for human due to inactivity
+            botActiveFlags[0] = true;
             document.getElementById('leg0').innerText = "🔴 You (Red) 🤖 [Bot Active]";
-            logLudo("⏱️ 30s timeout! Autopilot activated permanently for your player.");
+            logLudo("⏱️ 30s timeout! Autopilot activated automatically.");
           }
           waitingForTokenClick = false;
           runBotTurn(currentTurn);
