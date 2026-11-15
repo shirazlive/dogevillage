@@ -267,22 +267,22 @@
     <!-- Top Right Compact Dashboard Panel -->
     <div class="dashboard-panel">
       <div style="font-size: 11px; color: #f1c40f; margin-bottom: 5px; font-weight: bold;">
-        👤 <span id="userEmail">Not Logged In</span>
+        👤 <span id="userEmail">Loading...</span>
       </div>
 
       <div class="stats-row">
         <div>
           <div style="font-size: 9px; color: #ccc; text-transform: uppercase;">Balance</div>
-          <div class="balance-val"><span id="balance">0.0000</span> DOGE</div>
+          <div class="balance-val"><span id="balance">...</span> DOGE</div>
         </div>
         <div style="text-align: right;">
           <div style="font-size: 9px; color: #ccc; text-transform: uppercase;">Loan Debt</div>
-          <div class="debt-val"><span id="debt">0.0000</span> DOGE</div>
+          <div class="debt-val"><span id="debt">...</span> DOGE</div>
         </div>
       </div>
 
       <div class="queue-box">
-        <b>🌊 Doge Well 10x Pool:</b> <span id="poolCount">3</span> / 10 DOGE<br>
+        <b>🌊 Doge Well 10x Pool:</b> <span id="poolCount">...</span> / 10 DOGE<br>
         <span style="font-size: 10px; color: #f1c40f;">1 DOGE = Win 10 DOGE (FIFO Queue)</span>
       </div>
 
@@ -305,7 +305,7 @@
   </div>
 
   <!-- Login / Signup Modal -->
-  <div id="authModal" class="modal" style="display: flex;">
+  <div id="authModal" class="modal">
     <div class="modal-content">
       <h3 style="color: #f39c12; margin-bottom: 6px;">🐕 Doge Village Login</h3>
       <p style="font-size: 11px; color: #ccc; margin-bottom: 10px;">Earn via Ads or take 1 DOGE Loan when balance < 1.</p>
@@ -373,7 +373,7 @@
 
     let currentUser = null;
     let playerData = { playable_balance: 0, loan_debt: 0 };
-    let poolCount = 3;
+    let poolCount = "...";
 
     setInterval(() => {
       const bubble = document.getElementById('waveBubble');
@@ -387,6 +387,8 @@
         currentUser = session.user;
         document.getElementById('authModal').style.display = 'none';
         await loadPlayerWallet();
+      } else {
+        document.getElementById('authModal').style.display = 'flex';
       }
       await fetchWellPool();
       drawBoard();
@@ -431,7 +433,6 @@
       }
     }
 
-    // FETCH LIVE WELL POOL FROM DATABASE VIA SECURE RPC
     async function fetchWellPool() {
       const { data } = await db.from('house_vault').select('pool_count').eq('id', 1).single();
       if (data && data.pool_count !== undefined) {
@@ -442,7 +443,6 @@
       document.getElementById('poolCount').innerText = poolCount;
     }
 
-    // JOIN DOGE WELL POOL VIA SECURE RPC FUNCTION
     async function joinWellPool() {
       if (!currentUser) return alert("Please login first!");
       if (Number(playerData.playable_balance) < 1.0000) {
