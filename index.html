@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Doge Village - Doge Well & Classic 4-Player Ludo</title>
+  <title>Doge Village - Doge Well & Classic Ludo with Autopilot</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -145,7 +145,7 @@
       font-size: 13px; background: #fff; color: #000;
     }
 
-    /* REAL LUDO BOARD MODAL */
+    /* CLASSIC LUDO BOARD MODAL */
     .ludo-modal-box {
       background: #1e150c;
       border: 3px solid #dda15e;
@@ -188,6 +188,16 @@
       font-size: 14px;
       text-transform: uppercase;
       border: 2px solid #fff;
+    }
+
+    .timer-badge {
+      font-size: 12px;
+      color: #ff4757;
+      font-weight: bold;
+      background: rgba(255,71,87,0.15);
+      padding: 4px;
+      border-radius: 6px;
+      border: 1px solid #ff4757;
     }
 
     .dice-container {
@@ -233,7 +243,7 @@
       border: 1px solid #666;
       border-radius: 8px;
       padding: 8px;
-      height: 110px;
+      height: 105px;
       overflow-y: auto;
       font-size: 11px;
       text-align: left;
@@ -315,7 +325,7 @@
     </div>
   </div>
 
-  <!-- REAL CLASSIC LUDO BOARD MODAL -->
+  <!-- CLASSIC LUDO BOARD MODAL WITH AUTOPILOT -->
   <div id="ludoModal" class="modal">
     <div class="ludo-modal-box">
       <canvas id="ludoCanvas" width="450" height="450"></canvas>
@@ -323,6 +333,7 @@
       <div class="ludo-controls">
         <h3 style="color: #f1c40f; font-size: 16px;">🏆 Pot: 4.0 DOGE (Win 3.5)</h3>
         <div id="turnBanner" class="turn-banner" style="background: #e74c3c;">🔴 YOUR TURN</div>
+        <div id="timerBadge" class="timer-badge">⏳ Turn Time Left: 30s</div>
 
         <div class="player-legend">
           <div class="leg-item" style="background:#e74c3c;">🔴 You (Red)</div>
@@ -336,7 +347,7 @@
           <button id="rollDiceBtn" class="btn btn-ludo" style="width: auto; padding: 14px 18px; font-size: 14px;" onclick="handleHumanRoll()">🎲 ROLL DICE</button>
         </div>
 
-        <div style="font-size: 11px; color: #f1c40f;" id="actionHint">Click ROLL DICE to start! (Roll 6 to exit base)</div>
+        <div style="font-size: 11px; color: #f1c40f;" id="actionHint">Click ROLL DICE! (30s Autopilot active)</div>
         <div class="ludo-status-log" id="ludoLog">Match started! First to bring all 4 tokens Home wins 3.5 DOGE!</div>
       </div>
     </div>
@@ -354,9 +365,6 @@
   </div>
 
   <script>
-    // ==========================================
-    // 1. SUPABASE AUTH & WALLET CONNECTION
-    // ==========================================
     const SUPABASE_URL = 'https://sikhfrebddmqafxpciiy.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_uYxcSN4EkMdpMLnVuXa1gA_xO0acfh3';
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -385,7 +393,7 @@
       const password = document.getElementById('authPassword').value;
       const { data, error } = await db.auth.signUp({ email, password });
       if (error) return alert("Signup Error: " + error.message);
-      alert("Account created! Please check email if confirmation is required, or logging in...");
+      alert("Account created successfully!");
       if (data.session) {
         currentUser = data.user;
         document.getElementById('authModal').style.display = 'none';
@@ -475,70 +483,56 @@
     }
 
     // ==========================================
-    // 2. REAL CLASSIC 15x15 LUDO BOARD ENGINE
+    // CLASSIC LUDO BOARD & AUTOPILOT ENGINE
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
     const ctx = canvas.getContext('2d');
-    const CELL = 30; // 15 x 30 = 450px
+    const CELL = 30;
 
-    const COLORS = {
-      red: '#e74c3c',
-      green: '#27ae60',
-      yellow: '#f1c40f',
-      blue: '#2980b9'
-    };
+    const COLORS = { red: '#e74c3c', green: '#27ae60', yellow: '#f1c40f', blue: '#2980b9' };
 
-    // 52-step Outer Track Coordinates [col, row] (0-indexed 0..14)
     const MAIN_TRACK = [
-      [1,6],[2,6],[3,6],[4,6],[5,6],       // 0-4 (Red start is 0)
-      [6,5],[6,4],[6,3],[6,2],[6,1],[6,0], // 5-10
-      [7,0],[8,0],                         // 11-12
-      [8,1],[8,2],[8,3],[8,4],[8,5],       // 13-17 (Green start is 13)
-      [9,6],[10,6],[11,6],[12,6],[13,6],[14,6], // 18-23
-      [14,7],[14,8],                       // 24-25
-      [13,8],[12,8],[11,8],[10,8],[9,8],   // 26-30 (Yellow start is 26)
-      [8,9],[8,10],[8,11],[8,12],[8,13],[8,14], // 31-36
-      [7,14],[6,14],                       // 37-38
-      [6,13],[6,12],[6,11],[6,10],[6,9],   // 39-43 (Blue start is 39)
-      [5,8],[4,8],[3,8],[2,8],[1,8],[0,8], // 44-49
-      [0,7],[0,6]                          // 50-51
+      [1,6],[2,6],[3,6],[4,6],[5,6],
+      [6,5],[6,4],[6,3],[6,2],[6,1],[6,0],
+      [7,0],[8,0],
+      [8,1],[8,2],[8,3],[8,4],[8,5],
+      [9,6],[10,6],[11,6],[12,6],[13,6],[14,6],
+      [14,7],[14,8],
+      [13,8],[12,8],[11,8],[10,8],[9,8],
+      [8,9],[8,10],[8,11],[8,12],[8,13],[8,14],
+      [7,14],[6,14],
+      [6,13],[6,12],[6,11],[6,10],[6,9],
+      [5,8],[4,8],[3,8],[2,8],[1,8],[0,8],
+      [0,7],[0,6]
     ];
 
-    // Safe Squares on Main Track (Start squares + Star squares)
     const SAFE_INDICES = [0, 8, 13, 21, 26, 34, 39, 47];
 
-    // Home Stretch Coordinates (steps 51 to 56, where 56 is Home Triangle)
     const HOME_PATHS = [
-      [[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],       // 0: Red (Bottom-Left)
-      [[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],       // 1: Green (Top-Left)
-      [[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]],   // 2: Yellow (Top-Right)
-      [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]]    // 3: Blue (Bottom-Right)
+      [[1,7],[2,7],[3,7],[4,7],[5,7],[6,7]],
+      [[7,1],[7,2],[7,3],[7,4],[7,5],[7,6]],
+      [[13,7],[12,7],[11,7],[10,7],[9,7],[8,7]],
+      [[7,13],[7,12],[7,11],[7,10],[7,9],[7,8]]
     ];
 
-    // Base Yard Coordinates for 4 tokens per player
     const BASE_YARDS = [
-      [[1.5,1.5],[3.5,1.5],[1.5,3.5],[3.5,3.5]],         // 0: Red (Top-Left Base) -> Wait: Let's align start indices!
-      [[10.5,1.5],[12.5,1.5],[10.5,3.5],[12.5,3.5]],     // 1: Green (Top-Right Base)
-      [[10.5,10.5],[12.5,10.5],[10.5,12.5],[12.5,12.5]], // 2: Yellow (Bottom-Right Base)
-      [[1.5,10.5],[3.5,10.5],[1.5,12.5],[3.5,12.5]]      // 3: Blue (Bottom-Left Base)
+      [[1.5,1.5],[3.5,1.5],[1.5,3.5],[3.5,3.5]],
+      [[10.5,1.5],[12.5,1.5],[10.5,3.5],[12.5,3.5]],
+      [[10.5,10.5],[12.5,10.5],[10.5,12.5],[12.5,12.5]],
+      [[1.5,10.5],[3.5,10.5],[1.5,12.5],[3.5,12.5]]
     ];
 
     const START_OFFSETS = [0, 13, 26, 39];
     const PLAYER_NAMES = ["🔴 You (Red)", "🟢 Ali (Green)", "🟡 Sara (Yellow)", "🔵 Khan (Blue)"];
     const PLAYER_HEX = [COLORS.red, COLORS.green, COLORS.yellow, COLORS.blue];
 
-    // Game State: step = -1 (in base), 0..50 (main track), 51..55 (home stretch), 56 (finished!)
-    let tokens = [
-      [-1, -1, -1, -1], // Player 0 (Human - Red)
-      [-1, -1, -1, -1], // Player 1 (Bot - Green)
-      [-1, -1, -1, -1], // Player 2 (Bot - Yellow)
-      [-1, -1, -1, -1]  // Player 3 (Bot - Blue)
-    ];
-
+    let tokens = [[-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1]];
     let currentTurn = 0;
     let diceValue = 0;
     let waitingForTokenClick = false;
     let ludoRunning = false;
+    let turnTimerInterval = null;
+    let timeLeft = 30;
 
     async function startLudoMatch() {
       if (!currentUser) return alert("Please login first!");
@@ -548,22 +542,63 @@
 
       await loadPlayerWallet();
 
-      // Reset Game
-      tokens = [
-        [-1, -1, -1, -1],
-        [-1, -1, -1, -1],
-        [-1, -1, -1, -1],
-        [-1, -1, -1, -1]
-      ];
+      tokens = [[-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1]];
       currentTurn = 0;
       diceValue = 0;
       waitingForTokenClick = false;
       ludoRunning = true;
 
-      document.getElementById('ludoLog').innerHTML = "1.00 DOGE Entry Paid! Pot = 4.00 DOGE.<br>Roll 6 to bring a token out!";
+      document.getElementById('ludoLog').innerHTML = "1.00 DOGE Entry Paid! Pot = 4.00 DOGE.<br>Roll 6 to bring token out!";
       updateTurnUI();
       drawBoard();
       document.getElementById('ludoModal').style.display = 'flex';
+      startTurnTimer();
+    }
+
+    function startTurnTimer() {
+      clearInterval(turnTimerInterval);
+      timeLeft = 30;
+      document.getElementById('timerBadge').innerText = `⏳ Turn Time Left: ${timeLeft}s`;
+
+      turnTimerInterval = setInterval(() => {
+        if (!ludoRunning) {
+          clearInterval(turnTimerInterval);
+          return;
+        }
+        timeLeft--;
+        document.getElementById('timerBadge').innerText = `⏳ Turn Time Left: ${timeLeft}s`;
+
+        if (timeLeft <= 0) {
+          clearInterval(turnTimerInterval);
+          if (currentTurn === 0) {
+            logLudo("⏱️ Time out! Autopilot activated for your turn.");
+            waitingForTokenClick = false;
+            // Autopilot move for human
+            runAutopilotMove(0);
+          }
+        }
+      }, 1000);
+    }
+
+    function runAutopilotMove(pIdx) {
+      if (!ludoRunning) return;
+      diceValue = Math.floor(Math.random() * 6) + 1;
+      document.getElementById('diceBox').innerText = diceValue;
+      logLudo(`🤖 Autopilot rolled a <b>${diceValue}</b> for ${PLAYER_NAMES[pIdx]}`);
+
+      const valid = getMovableTokens(pIdx, diceValue);
+      if (valid.length === 0) {
+        logLudo("No valid moves available. Passing turn.");
+        setTimeout(() => nextTurn(false), 800);
+      } else {
+        // Pick best token automatically
+        let chosen = valid[0];
+        for (let t of valid) {
+          if (tokens[pIdx][t] === -1 && diceValue === 6) { chosen = t; break; }
+          if (tokens[pIdx][t] > tokens[pIdx][chosen]) { chosen = t; }
+        }
+        executeMove(pIdx, chosen);
+      }
     }
 
     function logLudo(msg) {
@@ -581,9 +616,8 @@
 
     function getTokenCoords(pIdx, tIdx) {
       const step = tokens[pIdx][tIdx];
-      if (step === -1) {
-        return BASE_YARDS[pIdx][tIdx];
-      } else if (step >= 0 && step <= 50) {
+      if (step === -1) return BASE_YARDS[pIdx][tIdx];
+      else if (step >= 0 && step <= 50) {
         const globalIdx = (START_OFFSETS[pIdx] + step) % 52;
         return MAIN_TRACK[globalIdx];
       } else {
@@ -594,35 +628,23 @@
 
     function drawBoard() {
       ctx.clearRect(0, 0, 450, 450);
-
-      // 1. White Grid Background
       ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, 450, 450);
 
-      // 2. Draw 4 Corner Bases (6x6 cells each)
-      drawBase(0, 0, COLORS.red);      // Top-Left: Red
-      drawBase(9, 0, COLORS.green);    // Top-Right: Green
-      drawBase(9, 9, COLORS.yellow);   // Bottom-Right: Yellow
-      drawBase(0, 9, COLORS.blue);     // Bottom-Left: Blue
+      drawBase(0, 0, COLORS.red);
+      drawBase(9, 0, COLORS.green);
+      drawBase(9, 9, COLORS.yellow);
+      drawBase(0, 9, COLORS.blue);
 
-      // 3. Draw Home Stretches & Start Squares
-      // Red Home Stretch & Start
       fillCell(1, 6, COLORS.red);
       for (let c = 1; c <= 5; c++) fillCell(c, 7, COLORS.red);
-
-      // Green Home Stretch & Start
       fillCell(8, 1, COLORS.green);
       for (let r = 1; r <= 5; r++) fillCell(7, r, COLORS.green);
-
-      // Yellow Home Stretch & Start
       fillCell(13, 8, COLORS.yellow);
       for (let c = 9; c <= 13; c++) fillCell(c, 7, COLORS.yellow);
-
-      // Blue Home Stretch & Start
       fillCell(6, 13, COLORS.blue);
       for (let r = 9; r <= 13; r++) fillCell(7, r, COLORS.blue);
 
-      // 4. Draw Grid Lines for Track
       ctx.strokeStyle = "#555";
       ctx.lineWidth = 1;
       for (let r = 0; r < 15; r++) {
@@ -632,7 +654,6 @@
         }
       }
 
-      // 5. Draw Safe Stars
       SAFE_INDICES.forEach(idx => {
         const [c, r] = MAIN_TRACK[idx];
         ctx.fillStyle = "#444";
@@ -642,24 +663,20 @@
         ctx.fillText("★", c * CELL + CELL/2, r * CELL + CELL/2 + 1);
       });
 
-      // 6. Draw Center 3x3 Home Triangles
       const cx = 7.5 * CELL, cy = 7.5 * CELL;
       drawTriangle(6*CELL, 6*CELL, 6*CELL, 9*CELL, cx, cy, COLORS.red);
       drawTriangle(6*CELL, 6*CELL, 9*CELL, 6*CELL, cx, cy, COLORS.green);
       drawTriangle(9*CELL, 6*CELL, 9*CELL, 9*CELL, cx, cy, COLORS.yellow);
       drawTriangle(6*CELL, 9*CELL, 9*CELL, 9*CELL, cx, cy, COLORS.blue);
 
-      // 7. Draw All Tokens
       for (let p = 0; p < 4; p++) {
         for (let t = 0; t < 4; t++) {
           const [col, row] = getTokenCoords(p, t);
-          // Slight offset if multiple tokens share a cell
           const offsetX = (p % 2 === 0 ? -3 : 3);
           const offsetY = (p < 2 ? -3 : 3);
           const px = col * CELL + CELL/2 + (tokens[p][t] === -1 ? 0 : offsetX);
           const py = row * CELL + CELL/2 + (tokens[p][t] === -1 ? 0 : offsetY);
 
-          // Highlight movable human tokens
           const isMovable = (p === 0 && waitingForTokenClick && canTokenMove(0, t, diceValue));
           if (isMovable) {
             ctx.beginPath();
@@ -690,7 +707,6 @@
       ctx.fillRect(startCol * CELL, startRow * CELL, 6 * CELL, 6 * CELL);
       ctx.fillStyle = "#fff";
       ctx.fillRect((startCol + 1) * CELL, (startRow + 1) * CELL, 4 * CELL, 4 * CELL);
-      // 4 Token Circles
       const spots = [[1.5,1.5],[3.5,1.5],[1.5,3.5],[3.5,3.5]];
       spots.forEach(([dc, dr]) => {
         ctx.beginPath();
@@ -719,9 +735,9 @@
 
     function canTokenMove(pIdx, tIdx, roll) {
       const step = tokens[pIdx][tIdx];
-      if (step === 56) return false; // Already Home
-      if (step === -1) return roll === 6; // Needs 6 to leave base
-      return (step + roll) <= 56; // Cannot overshoot Home
+      if (step === 56) return false;
+      if (step === -1) return roll === 6;
+      return (step + roll) <= 56;
     }
 
     function getMovableTokens(pIdx, roll) {
@@ -732,10 +748,10 @@
       return valid;
     }
 
-    // Human Dice Roll Handler
     function handleHumanRoll() {
       if (currentTurn !== 0 || waitingForTokenClick || !ludoRunning) return;
       document.getElementById('rollDiceBtn').disabled = true;
+      clearInterval(turnTimerInterval); // Stop timer once rolled
 
       const diceEl = document.getElementById('diceBox');
       diceEl.classList.add('dice-shake');
@@ -751,18 +767,15 @@
           document.getElementById('actionHint').innerText = "No valid moves! Passing turn...";
           setTimeout(() => nextTurn(false), 900);
         } else if (valid.length === 1) {
-          // Auto-move if only 1 token can move
           executeMove(0, valid[0]);
         } else {
-          // Let player click which token to move
           waitingForTokenClick = true;
-          document.getElementById('actionHint').innerText = "👆 Click one of your glowing tokens on the board!";
+          document.getElementById('actionHint').innerText = "👆 Click your glowing token on the board!";
           drawBoard();
         }
       }, 450);
     }
 
-    // Canvas Click to Select Human Token
     canvas.addEventListener('click', (e) => {
       if (!waitingForTokenClick || currentTurn !== 0) return;
       const rect = canvas.getBoundingClientRect();
@@ -776,8 +789,7 @@
         const [col, row] = getTokenCoords(0, t);
         const px = col * CELL + CELL/2;
         const py = row * CELL + CELL/2;
-        const dist = Math.hypot(clickX - px, clickY - py);
-        if (dist <= 22) {
+        if (Math.hypot(clickX - px, clickY - py) <= 22) {
           waitingForTokenClick = false;
           executeMove(0, t);
           return;
@@ -789,7 +801,7 @@
       let bonusTurn = (diceValue === 6);
 
       if (tokens[pIdx][tIdx] === -1) {
-        tokens[pIdx][tIdx] = 0; // Enter board
+        tokens[pIdx][tIdx] = 0;
         logLudo(`${PLAYER_NAMES[pIdx]} brought Token #${tIdx+1} out!`);
       } else {
         tokens[pIdx][tIdx] += diceValue;
@@ -799,7 +811,6 @@
         }
       }
 
-      // Check Capture (if on main track 0..50 and NOT on safe star)
       const step = tokens[pIdx][tIdx];
       if (step >= 0 && step <= 50) {
         const globalPos = (START_OFFSETS[pIdx] + step) % 52;
@@ -811,7 +822,7 @@
               if (oppStep >= 0 && oppStep <= 50) {
                 const oppGlobal = (START_OFFSETS[opp] + oppStep) % 52;
                 if (oppGlobal === globalPos) {
-                  tokens[opp][ot] = -1; // Send opponent back to base!
+                  tokens[opp][ot] = -1;
                   bonusTurn = true;
                   logLudo(`⚔️ ${PLAYER_NAMES[pIdx]} CAPTURED ${PLAYER_NAMES[opp]}'s token! (+Bonus Turn)`);
                 }
@@ -823,15 +834,15 @@
 
       drawBoard();
 
-      // Check Winner (All 4 tokens at step 56)
       if (tokens[pIdx].every(s => s === 56)) {
         ludoRunning = false;
+        clearInterval(turnTimerInterval);
         if (pIdx === 0) {
           const { data } = await db.rpc('settle_ludo_win', { p_winner_id: currentUser.id });
-          alert(`🎉 CONGRATULATIONS! YOU WON THE LUDO MATCH!\nTotal Prize: 3.50 DOGE\nAuto-Repaid Loan: ${data.debt_repaid} DOGE\nNet Added to Balance: ${data.net_win} DOGE\n(0.50 DOGE went to Village Vault)`);
+          alert(`🎉 CONGRATULATIONS! YOU WON THE LUDO MATCH!\nTotal Prize: 3.50 DOGE\nAuto-Repaid Loan: ${data.debt_repaid} DOGE\nNet Added to Balance: ${data.net_win} DOGE`);
         } else {
           await db.rpc('settle_ludo_win', { p_winner_id: '00000000-0000-0000-0000-000000000000' });
-          alert(`😢 ${PLAYER_NAMES[pIdx]} won the match! You lost your 1 DOGE entry.\nWatch ads or borrow another 1 DOGE loan to play again!`);
+          alert(`😢 ${PLAYER_NAMES[pIdx]} won the match! You lost your 1 DOGE entry.`);
         }
         document.getElementById('ludoModal').style.display = 'none';
         await loadPlayerWallet();
@@ -852,7 +863,8 @@
       updateTurnUI();
 
       if (currentTurn === 0) {
-        document.getElementById('actionHint').innerText = "Your turn! Click ROLL DICE.";
+        document.getElementById('actionHint').innerText = "Your turn! Click ROLL DICE (30s timer).";
+        startTurnTimer();
       } else {
         document.getElementById('actionHint').innerText = `${PLAYER_NAMES[currentTurn]} is rolling...`;
         setTimeout(() => runBotTurn(currentTurn), 750);
@@ -862,9 +874,8 @@
     function runBotTurn(botIdx) {
       if (!ludoRunning || currentTurn !== botIdx) return;
 
-      const diceEl = document.getElementById('diceBox');
       diceValue = Math.floor(Math.random() * 6) + 1;
-      diceEl.innerText = diceValue;
+      document.getElementById('diceBox').innerText = diceValue;
       logLudo(`${PLAYER_NAMES[botIdx]} rolled <b>${diceValue}</b>`);
 
       const valid = getMovableTokens(botIdx, diceValue);
@@ -873,16 +884,10 @@
         return;
       }
 
-      // Smart Bot Priority: 1. Capture opponent, 2. Exit base on 6, 3. Advance furthest token
       let chosen = valid[0];
       for (let t of valid) {
-        if (tokens[botIdx][t] === -1 && diceValue === 6) {
-          chosen = t;
-          break;
-        }
-        if (tokens[botIdx][t] > tokens[botIdx][chosen]) {
-          chosen = t;
-        }
+        if (tokens[botIdx][t] === -1 && diceValue === 6) { chosen = t; break; }
+        if (tokens[botIdx][t] > tokens[botIdx][chosen]) { chosen = t; }
       }
 
       setTimeout(() => executeMove(botIdx, chosen), 500);
