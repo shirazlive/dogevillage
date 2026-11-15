@@ -264,7 +264,7 @@
 
   <div class="village-fullscreen">
 
-    <!-- Top Right Compact Control Dashboard -->
+    <!-- Top Right Compact Dashboard Panel -->
     <div class="dashboard-panel">
       <div style="font-size: 11px; color: #f1c40f; margin-bottom: 5px; font-weight: bold;">
         👤 <span id="userEmail">Not Logged In</span>
@@ -431,20 +431,17 @@
       }
     }
 
-    // FETCH LIVE WELL POOL FROM DATABASE (house_vault table)
     async function fetchWellPool() {
       const { data } = await db.from('house_vault').select('*').limit(1).single();
       if (data && data.pool_count !== undefined) {
         poolCount = data.pool_count;
       } else {
-        // If row doesn't exist yet, initialize it
         await db.from('house_vault').upsert({ id: 1, pool_count: 3, total_rake: 0 });
         poolCount = 3;
       }
       document.getElementById('poolCount').innerText = poolCount;
     }
 
-    // UPDATE WELL POOL IN DATABASE
     async function updateWellPoolInDB(newCount) {
       poolCount = newCount;
       document.getElementById('poolCount').innerText = poolCount;
@@ -457,7 +454,7 @@
         return alert("⚠️ You need at least 1.00 DOGE in your balance to join the Well Pool!");
       }
 
-      await fetchWellPool(); // Get latest from server before updating
+      await fetchWellPool();
 
       playerData.playable_balance -= 1.0000;
       let newPoolCount = poolCount + 1;
@@ -932,9 +929,7 @@
 
     function nextTurn(bonusTurn) {
       if (!ludoRunning) return;
-      if (!bonusTestCheck && !bonusTurn) { // standard turn change
-        currentTurn = (currentTurn + 1) % 4;
-      } else if (!bonusTurn) {
+      if (!bonusTurn) {
         currentTurn = (currentTurn + 1) % 4;
       } else {
         logLudo(`🎲 Bonus turn for ${PLAYER_NAMES[currentTurn]}!`);
