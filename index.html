@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Doge Village - Doge Well & Classic Ludo</title>
+  <title>Doge Village - Doge Well Queue & Classic Ludo</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -327,7 +327,7 @@
     </div>
   </div>
 
-  <!-- CLASSIC LUDO BOARD MODAL WITH TOGGLEABLE AUTOPILOT -->
+  <!-- CLASSIC LUDO BOARD MODAL WITH TOGGLEABLE BOT -->
   <div id="ludoModal" class="modal">
     <div class="ludo-modal-box">
       <canvas id="ludoCanvas" width="450" height="450"></canvas>
@@ -388,6 +388,7 @@
         document.getElementById('authModal').style.display = 'none';
         await loadPlayerWallet();
       }
+      await fetchWellPool();
       drawBoard();
     };
 
@@ -430,26 +431,49 @@
       }
     }
 
+    // FETCH LIVE WELL POOL FROM DATABASE (house_vault table)
+    async function fetchWellPool() {
+      const { data } = await db.from('house_vault').select('*').limit(1).single();
+      if (data && data.pool_count !== undefined) {
+        poolCount = data.pool_count;
+      } else {
+        // If row doesn't exist yet, initialize it
+        await db.from('house_vault').upsert({ id: 1, pool_count: 3, total_rake: 0 });
+        poolCount = 3;
+      }
+      document.getElementById('poolCount').innerText = poolCount;
+    }
+
+    // UPDATE WELL POOL IN DATABASE
+    async function updateWellPoolInDB(newCount) {
+      poolCount = newCount;
+      document.getElementById('poolCount').innerText = poolCount;
+      await db.from('house_vault').update({ pool_count: poolCount }).eq('id', 1);
+    }
+
     async function joinWellPool() {
       if (!currentUser) return alert("Please login first!");
       if (playerData.playable_balance < 1.0000) {
         return alert("⚠️ You need at least 1.00 DOGE in your balance to join the Well Pool!");
       }
 
-      playerData.playable_balance -= 1.0000;
-      poolCount++;
+      await fetchWellPool(); // Get latest from server before updating
 
-      if (poolCount >= 10) {
+      playerData.playable_balance -= 1.0000;
+      let newPoolCount = poolCount + 1;
+
+      if (newPoolCount >= 10) {
         playerData.playable_balance += 10.0000;
         alert("🎉 DOGE Well Target Reached (10/10)!\nYou won 10.00 DOGE!");
-        poolCount = 1;
+        newPoolCount = 1;
       } else {
-        alert("✅ Added 1 DOGE to Well Queue! Pool: " + poolCount + "/10");
+        alert("✅ Added 1 DOGE to Well Queue! Pool: " + newPoolCount + "/10");
       }
 
+      await updateWellPoolInDB(newPoolCount);
       await db.from('players').update({ playable_balance: playerData.playable_balance }).eq('id', currentUser.id);
+      
       document.getElementById('balance').innerText = Number(playerData.playable_balance).toFixed(4);
-      document.getElementById('poolCount').innerText = poolCount;
     }
 
     function watchAd() {
@@ -485,7 +509,6 @@
       await loadPlayerWallet();
     }
 
-    // FIXED REPAY LOAN FUNCTION (Accurate Math & Database Sync)
     async function repayLoanManual() {
       if (!currentUser) return alert("Please login first!");
       let debt = Number(playerData.loan_debt);
@@ -493,7 +516,6 @@
 
       if (debt <= 0) return alert("You have no active loan debt to repay!");
       
-      // Repay up to 1 DOGE (or remaining debt if less than 1)
       let repayAmount = debt >= 1.0000 ? 1.0000 : debt;
 
       if (balance < repayAmount) {
@@ -602,7 +624,6 @@
       startTurnTimer();
     }
 
-    // TOGGLE BOT MODE ON CLICKING LEGEND BADGE
     function toggleBotMode() {
       if (!ludoRunning) return;
       botActiveFlags[0] = !botActiveFlags[0];
@@ -911,7 +932,9 @@
 
     function nextTurn(bonusTurn) {
       if (!ludoRunning) return;
-      if (!bonusTurn) {
+      if (!bonusTestCheck && !bonusTurn) { // standard turn change
+        currentTurn = (currentTurn + 1) % 4;
+      } else if (!bonusTurn) {
         currentTurn = (currentTurn + 1) % 4;
       } else {
         logLudo(`🎲 Bonus turn for ${PLAYER_NAMES[currentTurn]}!`);
