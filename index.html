@@ -3,23 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Doge Village - Doge Well & Pool Queue</title>
+  <title>Doge Village - Doge Well & 4-Player Ludo</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    html, body { width: 100%; height: 100%; overflow: auto; background: #111; }
 
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background: #111;
-    }
-
-    /* Flexible Village Container with Full Scroll Support */
     .village-fullscreen {
       position: relative;
       width: 100%;
@@ -40,12 +29,12 @@
       top: 20px;
       right: 20px;
       z-index: 10;
-      background: rgba(30, 20, 10, 0.9);
+      background: rgba(30, 20, 10, 0.92);
       border: 2px solid #dda15e;
       border-radius: 16px;
-      padding: 12px 14px;
-      width: 290px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+      padding: 14px;
+      width: 310px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.7);
       backdrop-filter: blur(5px);
       color: #fff;
     }
@@ -57,38 +46,30 @@
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid #dda15e;
       border-radius: 10px;
-      padding: 6px 10px;
+      padding: 8px 10px;
       margin-bottom: 8px;
     }
 
-    .balance-val {
-      font-size: 18px;
-      font-weight: 800;
-      color: #2ed573;
-      text-shadow: 1px 1px 2px #000;
-    }
+    .balance-val { font-size: 17px; font-weight: 800; color: #2ed573; text-shadow: 1px 1px 2px #000; }
+    .debt-val { font-size: 15px; font-weight: 800; color: #ff4757; text-shadow: 1px 1px 2px #000; }
 
     .queue-box {
       background: rgba(212, 163, 115, 0.25);
       border-radius: 8px;
-      padding: 6px 10px;
+      padding: 7px 10px;
       font-size: 11px;
-      margin-bottom: 8px;
+      margin-bottom: 10px;
       border: 1px solid #dda15e;
       text-align: center;
       color: #fffae6;
     }
 
-    .btn-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
+    .btn-grid { display: flex; flex-direction: column; gap: 7px; }
 
     .btn {
       width: 100%;
-      padding: 8px 6px;
-      font-size: 11px;
+      padding: 9px 8px;
+      font-size: 12px;
       font-weight: bold;
       border: none;
       border-radius: 8px;
@@ -98,47 +79,36 @@
       transition: all 0.1s ease;
       text-shadow: 1px 1px 1px #000;
     }
+    .btn:active { transform: translateY(2px); box-shadow: 0 1px 0px rgba(0,0,0,0.3); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .btn:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0px rgba(0,0,0,0.3);
-    }
-
-    .btn-well { background: #e67e22; box-shadow: 0 3px 0px #d35400; }
-    .btn-pool { background: #27ae60; box-shadow: 0 3px 0px #1e8449; }
+    .btn-ad { background: #e67e22; box-shadow: 0 3px 0px #d35400; }
+    .btn-loan { background: #8e44ad; box-shadow: 0 3px 0px #6c3483; }
+    .btn-ludo { background: #27ae60; box-shadow: 0 3px 0px #1e8449; font-size: 13px; }
     .btn-withdraw { background: #2980b9; box-shadow: 0 3px 0px #1c5980; }
+    .btn-logout { background: #555; font-size: 10px; padding: 5px; margin-top: 4px; }
 
-    /* Interactive Well Tap Target */
     .well-click-target {
       position: absolute;
-      top: 50%;
-      left: 58%;
+      top: 50%; left: 58%;
       transform: translate(-50%, -50%);
-      width: 280px;
-      height: 250px;
-      cursor: pointer;
-      z-index: 8;
-      border-radius: 50%;
+      width: 280px; height: 250px;
+      cursor: pointer; z-index: 8; border-radius: 50%;
     }
 
-    /* Auto Waving Chat Bubble (1 min interval) */
     .wave-bubble {
       position: absolute;
-      top: 42%;
-      left: 58%;
+      top: 42%; left: 58%;
       transform: translate(-50%, -50%);
       background: rgba(255, 255, 255, 0.95);
       color: #333;
       padding: 8px 14px;
       border-radius: 16px;
-      font-size: 12px;
-      font-weight: 800;
+      font-size: 12px; font-weight: 800;
       box-shadow: 0 6px 20px rgba(0,0,0,0.5);
       border: 2px solid #f77f00;
       animation: pulseWave 1.5s infinite alternate;
-      display: none;
-      z-index: 10;
-      text-align: center;
+      display: none; z-index: 10; text-align: center;
     }
 
     @keyframes pulseWave {
@@ -146,12 +116,12 @@
       100% { transform: translate(-50%, -50%) scale(1.05); }
     }
 
-    /* Modal */
+    /* Modals */
     .modal {
       display: none;
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.85);
       justify-content: center;
       align-items: center;
       z-index: 100;
@@ -159,24 +129,46 @@
 
     .modal-content {
       background: #2b1d0e;
-      padding: 20px;
+      padding: 22px;
       border-radius: 16px;
-      width: 90%;
-      max-width: 300px;
+      width: 92%;
+      max-width: 380px;
       text-align: center;
       border: 2px solid #dda15e;
       color: #fff;
     }
 
     .modal-content input {
-      width: 100%;
-      padding: 8px;
-      margin: 10px 0;
-      border: 2px solid #dda15e;
-      border-radius: 8px;
-      font-size: 13px;
-      background: #fff;
-      color: #000;
+      width: 100%; padding: 10px; margin: 8px 0;
+      border: 2px solid #dda15e; border-radius: 8px;
+      font-size: 13px; background: #fff; color: #000;
+    }
+
+    /* Ludo Arena Styling */
+    .ludo-arena { max-width: 460px; }
+    .ludo-players {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      margin: 12px 0;
+    }
+    .p-card {
+      padding: 8px; border-radius: 8px; font-size: 12px; font-weight: bold;
+      border: 2px solid rgba(255,255,255,0.2);
+    }
+    .p-red { background: rgba(231, 76, 60, 0.3); border-color: #e74c3c; }
+    .p-green { background: rgba(46, 204, 113, 0.3); border-color: #2ecc71; }
+    .p-yellow { background: rgba(241, 196, 15, 0.3); border-color: #f1c40f; }
+    .p-blue { background: rgba(52, 152, 219, 0.3); border-color: #3498db; }
+
+    .dice-box {
+      font-size: 42px; margin: 10px auto; width: 70px; height: 70px;
+      background: #fff; color: #111; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+    .log-box {
+      background: rgba(0,0,0,0.5); padding: 8px; border-radius: 8px;
+      font-size: 11px; height: 75px; overflow-y: auto; text-align: left;
+      margin-bottom: 10px; border: 1px solid #555;
     }
   </style>
 </head>
@@ -186,118 +178,296 @@
 
     <!-- Top Right Compact Control Dashboard -->
     <div class="dashboard-panel">
+      <div style="font-size: 11px; color: #f1c40f; margin-bottom: 6px; font-weight: bold;">
+        👤 <span id="userEmail">Not Logged In</span>
+      </div>
+
       <div class="stats-row">
         <div>
-          <div style="font-size: 9px; color: #ccc; text-transform: uppercase; font-weight: bold;">Your Balance</div>
+          <div style="font-size: 9px; color: #ccc; text-transform: uppercase;">Playable Balance</div>
           <div class="balance-val"><span id="balance">0.0000</span> DOGE</div>
         </div>
         <div style="text-align: right;">
-          <div id="levelBadge" style="font-size: 11px; color: #f39c12; font-weight: bold;">🏠 Level 1</div>
-          <div style="font-size: 9px; color: #bbb;">Active Miner</div>
+          <div style="font-size: 9px; color: #ccc; text-transform: uppercase;">Loan Debt (Max 5)</div>
+          <div class="debt-val"><span id="debt">0.0000</span> DOGE</div>
         </div>
       </div>
 
       <div class="queue-box">
-        <b>🌊 Pool Queue:</b> <span id="poolCount">3</span> / 10 DOGE<br>
-        <span style="font-size: 10px; color: #f1c40f;">1 DOGE = 9 DOGE Win Chance</span>
+        <b>🎲 4-Player Ludo Pool:</b> 4.0 DOGE Pot<br>
+        <span style="font-size: 10px; color: #2ed573;">🏆 Winner gets 3.5 DOGE | 0.5 Village Fee</span>
       </div>
 
       <div class="btn-grid">
-        <button class="btn btn-well" onclick="mineDoge()">🪣 Draw DOGE (+0.02)</button>
-        <button class="btn btn-pool" onclick="joinPool()">🏊 Join Pool (1 DOGE)</button>
-        <button class="btn btn-withdraw" onclick="openModal()">💸 Withdraw to FaucetPay</button>
+        <button class="btn btn-ad" onclick="watchAd()">📺 Watch Ad (+0.25 DOGE)</button>
+        <button class="btn btn-loan" id="loanBtn" onclick="takeLoan()">🏦 Borrow 1 DOGE Loan (<span id="loanCount">0</span>/5)</button>
+        <button class="btn btn-ludo" onclick="startLudoMatch()">🎲 Play 4-Player Ludo (1 DOGE)</button>
+        <button class="btn btn-withdraw" id="withdrawBtn" onclick="openWithdrawModal()">💸 Withdraw to FaucetPay</button>
+        <button class="btn btn-logout" onclick="logoutUser()">🚪 Logout</button>
       </div>
     </div>
 
     <!-- Invisible Tap Area over Center Doge Well -->
-    <div class="well-click-target" onclick="mineDoge()" title="Tap Doge Well to Draw DOGE!"></div>
+    <div class="well-click-target" onclick="watchAd()" title="Tap Doge Well to Watch Ad & Earn!"></div>
 
     <!-- Auto Waving Chat Bubble (Every 1 Minute) -->
-    <div id="waveBubble" class="wave-bubble">👋 Aajaao sab! Pool Queue mein 10x chance hai! 🌊</div>
-
+    <div id="waveBubble" class="wave-bubble">👋 Aajaao sab! 1 DOGE Ludo jeeto aur 3.5 DOGE kamao! 🎲</div>
   </div>
 
-  <!-- FaucetPay Modal -->
+  <!-- Login / Signup Modal -->
+  <div id="authModal" class="modal" style="display: flex;">
+    <div class="modal-content">
+      <h3 style="color: #f39c12; margin-bottom: 6px;">🐕 Doge Village Login</h3>
+      <p style="font-size: 11px; color: #ccc; margin-bottom: 10px;">No deposits allowed! Earn via Ads or take up to 5x 1 DOGE Loan.</p>
+      <input type="email" id="authEmail" placeholder="Enter your email">
+      <input type="password" id="authPassword" placeholder="Enter password (min 6 chars)">
+      <button class="btn btn-ludo" style="margin-top: 6px;" onclick="loginUser()">Login</button>
+      <button class="btn btn-ad" style="margin-top: 6px;" onclick="signupUser()">Create New Account</button>
+    </div>
+  </div>
+
+  <!-- Ad Timer Modal -->
+  <div id="adModal" class="modal">
+    <div class="modal-content">
+      <h3 style="color: #f39c12;">📺 Watching Sponsor Ad...</h3>
+      <p style="font-size: 12px; color: #ccc; margin: 10px 0;">Please wait <b id="adTimer">5</b> seconds to claim 0.25 DOGE.</p>
+      <div style="background: #111; padding: 15px; border-radius: 10px; border: 1px dashed #dda15e; font-size: 12px;">
+        🚀 Your Ad Network Banner Here (A-ADS / Coinzilla / Bitmedia)
+      </div>
+    </div>
+  </div>
+
+  <!-- 4-Player Ludo Arena Modal -->
+  <div id="ludoModal" class="modal">
+    <div class="modal-content ludo-arena">
+      <h3 style="color: #2ed573;">🎲 4-Player Ludo Arena (Pot: 4.0 DOGE)</h3>
+      <p style="font-size: 11px; color: #ccc;">First to reach 20 steps wins <b>3.5 DOGE</b>! (0.5 DOGE Village Fee)</p>
+      
+      <div class="ludo-players">
+        <div class="p-card p-red">🔴 You: <span id="pos0">0</span>/20</div>
+        <div class="p-card p-green">🟢 Villager Ali: <span id="pos1">0</span>/20</div>
+        <div class="p-card p-yellow">🟡 Villager Sara: <span id="pos2">0</span>/20</div>
+        <div class="p-card p-blue">🔵 Villager Khan: <span id="pos3">0</span>/20</div>
+      </div>
+
+      <div class="dice-box" id="diceDisplay">🎲</div>
+      <div class="log-box" id="ludoLog">Match started! Click Roll Dice for your turn.</div>
+
+      <button class="btn btn-ludo" id="rollBtn" onclick="rollPlayerDice()">🎲 Roll Dice (Your Turn)</button>
+    </div>
+  </div>
+
+  <!-- FaucetPay Withdraw Modal -->
   <div id="withdrawModal" class="modal">
     <div class="modal-content">
-      <h3 style="color: #f39c12; margin-bottom: 5px; font-size: 16px;">💸 FaucetPay Payout</h3>
-      <p style="font-size: 11px; color: #ccc;">Enter registered FaucetPay email.</p>
-      <input type="email" id="faucetEmail" placeholder="example@gmail.com">
-      <button class="btn btn-pool" style="width:100%; margin-top: 5px;" onclick="submitWithdraw()">Submit Request</button>
-      <button class="btn" style="width:100%; background: #c0392b; margin-top: 6px;" onclick="closeModal()">Cancel</button>
+      <h3 style="color: #f39c12; margin-bottom: 5px;">💸 FaucetPay Payout</h3>
+      <p style="font-size: 11px; color: #ccc;">Loan Debt must be 0.0000 DOGE before withdrawal.</p>
+      <input type="email" id="faucetEmail" placeholder="Registered FaucetPay Email">
+      <button class="btn btn-ludo" style="margin-top: 5px;" onclick="submitWithdraw()">Withdraw All Balance</button>
+      <button class="btn" style="background: #c0392b; margin-top: 6px;" onclick="closeWithdrawModal()">Cancel</button>
     </div>
   </div>
 
   <script>
-    let balance = parseFloat(localStorage.getItem('doge_balance')) || 0.0000;
-    let level = parseInt(localStorage.getItem('doge_level')) || 1;
-    let clicks = parseInt(localStorage.getItem('doge_clicks')) || 0;
-    let poolCount = 3;
+    // Initialize Supabase Connection
+    const SUPABASE_URL = 'https://sikhfrebddmqafxpciiy.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_uYxcSN4EkMdpMLnVuXa1gA_xO0acfh3';
+    const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    updateUI();
+    let currentUser = null;
+    let playerData = { playable_balance: 0, loan_debt: 0 };
 
-    // Automatic Waving Chat Bubble (Every 1 Minute / 60000ms)
+    // Auto Waving Bubble every 1 minute
     setInterval(() => {
       const bubble = document.getElementById('waveBubble');
       bubble.style.display = 'block';
-      setTimeout(() => {
-        bubble.style.display = 'none';
-      }, 6000);
+      setTimeout(() => { bubble.style.display = 'none'; }, 6000);
     }, 60000);
 
-    function updateUI() {
-      document.getElementById('balance').innerText = balance.toFixed(4);
-      document.getElementById('levelBadge').innerText = `🏠 Level ${level}`;
-      document.getElementById('poolCount').innerText = poolCount;
-    }
-
-    function mineDoge() {
-      balance += 0.0200;
-      clicks++;
-
-      if (clicks % 5 === 0) {
-        level++;
+    // Check active session on page load
+    window.onload = async () => {
+      const { data: { session } } = await db.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        document.getElementById('authModal').style.display = 'none';
+        await loadPlayerWallet();
       }
+    };
 
-      localStorage.setItem('doge_balance', balance);
-      localStorage.setItem('doge_level', level);
-      localStorage.setItem('doge_clicks', clicks);
-      updateUI();
+    async function signupUser() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      const { data, error } = await db.auth.signUp({ email, password });
+      if (error) return alert("Signup Error: " + error.message);
+      alert("Account created! Logging you in...");
+      if (data.user) {
+        currentUser = data.user;
+        document.getElementById('authModal').style.display = 'none';
+        await loadPlayerWallet();
+      }
     }
 
-    function joinPool() {
-      if (balance < 1.0000) {
-        alert("⚠️ You need at least 1.00 DOGE to enter the Water Well Pool!");
+    async function loginUser() {
+      const email = document.getElementById('authEmail').value;
+      const password = document.getElementById('authPassword').value;
+      const { data, error } = await db.auth.signInWithPassword({ email, password });
+      if (error) return alert("Login Error: " + error.message);
+      currentUser = data.user;
+      document.getElementById('authModal').style.display = 'none';
+      await loadPlayerWallet();
+    }
+
+    async function logoutUser() {
+      await db.auth.signOut();
+      location.reload();
+    }
+
+    async function loadPlayerWallet() {
+      if (!currentUser) return;
+      document.getElementById('userEmail').innerText = currentUser.email;
+      const { data, error } = await db.from('players').select('*').eq('id', currentUser.id).single();
+      if (data) {
+        playerData = data;
+        document.getElementById('balance').innerText = Number(data.playable_balance).toFixed(4);
+        document.getElementById('debt').innerText = Number(data.loan_debt).toFixed(4);
+        document.getElementById('loanCount').innerText = Math.floor(Number(data.loan_debt));
+
+        // Lock withdraw button if player has unpaid loan
+        const wBtn = document.getElementById('withdrawBtn');
+        if (Number(data.loan_debt) > 0) {
+          wBtn.innerText = "🔒 Repay Loan to Withdraw";
+          wBtn.style.background = "#7f8c8d";
+        } else {
+          wBtn.innerText = "💸 Withdraw to FaucetPay";
+          wBtn.style.background = "#2980b9";
+        }
+      }
+    }
+
+    // 1. Watch Ad Function (Auto repays loan first!)
+    function watchAd() {
+      if (!currentUser) return alert("Please login first!");
+      const modal = document.getElementById('adModal');
+      const timerEl = document.getElementById('adTimer');
+      let seconds = 5;
+      timerEl.innerText = seconds;
+      modal.style.display = 'flex';
+
+      const interval = setInterval(async () => {
+        seconds--;
+        timerEl.innerText = seconds;
+        if (seconds <= 0) {
+          clearInterval(interval);
+          modal.style.display = 'none';
+          const { data, error } = await db.rpc('claim_ad_reward', { p_reward: 0.25 });
+          if (error) return alert(error.message);
+          alert(`📺 Ad Complete!\nPaid toward Loan: ${data.debt_paid} DOGE\nAdded to Balance: ${data.added_to_balance} DOGE`);
+          await loadPlayerWallet();
+        }
+      }, 1000);
+    }
+
+    // 2. Borrow 1 DOGE Loan (Max 5x)
+    async function takeLoan() {
+      if (!currentUser) return alert("Please login first!");
+      const { data, error } = await db.rpc('borrow_doge');
+      if (error) return alert(error.message);
+      alert(data.message);
+      await loadPlayerWallet();
+    }
+
+    // 3. 4-Player Ludo Match Engine
+    let positions = [0, 0, 0, 0];
+    let gameActive = false;
+
+    async function startLudoMatch() {
+      if (!currentUser) return alert("Please login first!");
+      const { data, error } = await db.rpc('enter_ludo_match');
+      if (error) return alert(error.message);
+      if (!data.success) return alert("⚠️ " + data.message);
+
+      await loadPlayerWallet();
+      positions = [0, 0, 0, 0];
+      gameActive = true;
+      updateLudoBoard();
+      document.getElementById('ludoLog').innerHTML = "1.00 DOGE Entry Paid! Pot = 4.00 DOGE.<br>Roll your dice!";
+      document.getElementById('rollBtn').disabled = false;
+      document.getElementById('ludoModal').style.display = 'flex';
+    }
+
+    function updateLudoBoard() {
+      for (let i = 0; i < 4; i++) {
+        document.getElementById('pos' + i).innerText = positions[i];
+      }
+    }
+
+    function addLog(msg) {
+      const box = document.getElementById('ludoLog');
+      box.innerHTML += "<br>" + msg;
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function rollPlayerDice() {
+      if (!gameActive) return;
+      document.getElementById('rollBtn').disabled = true;
+
+      // Player 0 (You) Roll
+      const roll = Math.floor(Math.random() * 6) + 1;
+      document.getElementById('diceDisplay').innerText = roll;
+      positions[0] = Math.min(20, positions[0] + roll);
+      addLog(`🔴 You rolled <b>${roll}</b> -> Step ${positions[0]}/20`);
+      updateLudoBoard();
+
+      if (positions[0] >= 20) {
+        gameActive = false;
+        const { data } = await db.rpc('settle_ludo_win', { p_winner_id: currentUser.id });
+        alert(`🎉 YOU WON THE LUDO MATCH!\nTotal Prize: 3.50 DOGE\nAuto-Repaid Loan: ${data.debt_repaid} DOGE\nNet Added to Wallet: ${data.net_win} DOGE\n(0.50 DOGE went to Village Vault)`);
+        document.getElementById('ludoModal').style.display = 'none';
+        await loadPlayerWallet();
         return;
       }
-      balance -= 1.0000;
-      poolCount++;
-      if (poolCount >= 10) {
-        alert("🎉 Pool Target Reached! #1 user won 9 DOGE, 1 DOGE re-invested!");
-        poolCount = 1;
+
+      // Simulate Other 3 Players' Turns
+      const names = ["", "🟢 Villager Ali", "🟡 Villager Sara", "🔵 Villager Khan"];
+      for (let p = 1; p <= 3; p++) {
+        await new Promise(r => setTimeout(r, 450));
+        const botRoll = Math.floor(Math.random() * 6) + 1;
+        positions[p] = Math.min(20, positions[p] + botRoll);
+        addLog(`${names[p]} rolled <b>${botRoll}</b> -> Step ${positions[p]}/20`);
+        updateLudoBoard();
+
+        if (positions[p] >= 20) {
+          gameActive = false;
+          // House still collects 0.5 DOGE fee on every completed match
+          await db.rpc('settle_ludo_win', { p_winner_id: '00000000-0000-0000-0000-000000000000' });
+          alert(`😢 ${names[p]} won the match! You lost your 1 DOGE entry.\nTake another loan (up to 5x) or watch ads to play again!`);
+          document.getElementById('ludoModal').style.display = 'none';
+          await loadPlayerWallet();
+          return;
+        }
       }
-      localStorage.setItem('doge_balance', balance);
-      updateUI();
+
+      document.getElementById('rollBtn').disabled = false;
     }
 
-    function openModal() { document.getElementById('withdrawModal').style.display = 'flex'; }
-    function closeModal() { document.getElementById('withdrawModal').style.display = 'none'; }
+    // 4. Withdraw Modal & Loan Check
+    function openWithdrawModal() {
+      if (Number(playerData.loan_debt) > 0) {
+        return alert(`🔒 Withdrawal Locked!\nYou currently owe ${Number(playerData.loan_debt).toFixed(4)} DOGE in loans.\nWatch ads or win a Ludo game to repay your loan first!`);
+      }
+      document.getElementById('withdrawModal').style.display = 'flex';
+    }
+
+    function closeWithdrawModal() {
+      document.getElementById('withdrawModal').style.display = 'none';
+    }
 
     function submitWithdraw() {
       const email = document.getElementById('faucetEmail').value;
-      if (!email.includes('@')) {
-        alert("Please enter valid email!");
-        return;
-      }
-      if (balance < 2.0000) {
-        alert("⚠️ Minimum withdrawal is 2.00 DOGE!");
-        return;
-      }
-      alert(`🎉 Success! Withdrawal request sent to ${email}`);
-      balance = 0;
-      localStorage.setItem('doge_balance', balance);
-      updateUI();
-      closeModal();
+      if (!email.includes('@')) return alert("Please enter valid FaucetPay email!");
+      if (Number(playerData.playable_balance) < 1.0000) return alert("⚠️ Minimum withdrawal is 1.00 DOGE!");
+      alert(`✅ Payout Request Queued for ${email}!\n(Next step: Connect FaucetPay API key in Supabase Edge Function for instant auto-transfer!)`);
+      closeWithdrawModal();
     }
   </script>
 </body>
