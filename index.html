@@ -431,46 +431,38 @@
       }
     }
 
+    // FETCH LIVE WELL POOL FROM DATABASE VIA SECURE RPC
     async function fetchWellPool() {
-      const { data } = await db.from('house_vault').select('*').limit(1).single();
+      const { data } = await db.from('house_vault').select('pool_count').eq('id', 1).single();
       if (data && data.pool_count !== undefined) {
         poolCount = data.pool_count;
       } else {
-        await db.from('house_vault').upsert({ id: 1, pool_count: 3, total_rake: 0 });
         poolCount = 3;
       }
       document.getElementById('poolCount').innerText = poolCount;
     }
 
-    async function updateWellPoolInDB(newCount) {
-      poolCount = newCount;
-      document.getElementById('poolCount').innerText = poolCount;
-      await db.from('house_vault').update({ pool_count: poolCount }).eq('id', 1);
-    }
-
+    // JOIN DOGE WELL POOL VIA SECURE RPC FUNCTION
     async function joinWellPool() {
       if (!currentUser) return alert("Please login first!");
-      if (playerData.playable_balance < 1.0000) {
+      if (Number(playerData.playable_balance) < 1.0000) {
         return alert("⚠️ You need at least 1.00 DOGE in your balance to join the Well Pool!");
       }
 
-      await fetchWellPool();
+      const { data, error } = await db.rpc('join_doge_well');
+      if (error) return alert("Error: " + error.message);
+      if (!data.success) return alert(data.message);
 
-      playerData.playable_balance -= 1.0000;
-      let newPoolCount = poolCount + 1;
+      poolCount = data.pool_count;
+      document.getElementById('poolCount').innerText = poolCount;
 
-      if (newPoolCount >= 10) {
-        playerData.playable_balance += 10.0000;
+      await loadPlayerWallet();
+
+      if (data.hit_target) {
         alert("🎉 DOGE Well Target Reached (10/10)!\nYou won 10.00 DOGE!");
-        newPoolCount = 1;
       } else {
-        alert("✅ Added 1 DOGE to Well Queue! Pool: " + newPoolCount + "/10");
+        alert("✅ Successfully added 1 DOGE to Well Queue! Pool: " + poolCount + "/10");
       }
-
-      await updateWellPoolInDB(newPoolCount);
-      await db.from('players').update({ playable_balance: playerData.playable_balance }).eq('id', currentUser.id);
-      
-      document.getElementById('balance').innerText = Number(playerData.playable_balance).toFixed(4);
     }
 
     function watchAd() {
@@ -497,7 +489,7 @@
 
     async function takeLoan() {
       if (!currentUser) return alert("Please login first!");
-      if (playerData.playable_balance >= 1.0000) {
+      if (Number(playerData.playable_balance) >= 1.0000) {
         return alert("⚠️ Your balance is 1.00 DOGE or more! Loans are only for balance < 1.00 DOGE.");
       }
       const { data, error } = await db.rpc('borrow_doge');
