@@ -90,6 +90,16 @@
     .btn-withdraw { background: #2980b9; box-shadow: 0 3px 0px #1c5980; }
     .btn-logout { background: #555; font-size: 10px; padding: 4px; margin-top: 2px; }
 
+    /* Permanent Homepage Ad Container */
+    .homepage-ad-box {
+      margin-top: 10px;
+      background: rgba(20, 10, 5, 0.9);
+      border: 1px dashed #dda15e;
+      border-radius: 10px;
+      padding: 6px;
+      text-align: center;
+    }
+
     .well-click-target {
       position: absolute;
       top: 50%; left: 58%;
@@ -264,7 +274,7 @@
 
   <div class="village-fullscreen">
 
-    <!-- Top Right Compact Dashboard Panel -->
+    <!-- Top Right Compact Dashboard Panel with Permanent Homepage Ad -->
     <div class="dashboard-panel">
       <div style="font-size: 11px; color: #f1c40f; margin-bottom: 5px; font-weight: bold;">
         👤 <span id="userEmail">Loading...</span>
@@ -295,6 +305,16 @@
         <button class="btn btn-withdraw" onclick="openWithdrawModal()">💸 Withdraw to FaucetPay</button>
         <button class="btn btn-logout" onclick="logoutUser()">🚪 Logout</button>
       </div>
+
+      <!-- PERMANENT HOMEPAGE A-ADS BANNER (#2462584) -->
+      <div class="homepage-ad-box">
+        <!-- BEGIN AADS AD UNIT 2462584 -->
+        <div id="frame" style="width: 100%; min-height: 60px; margin: auto; position: relative; z-index: 5; display: flex; justify-content: center; align-items: center;">
+          <iframe data-aa='2462584' src='//acceptable.a-ads.com/2462584/?size=Adaptive'
+            style='border:0; padding:0; width:100%; height:60px; overflow:hidden; display:block; margin:auto'></iframe>
+        </div>
+        <!-- END AADS AD UNIT 2462584 -->
+      </div>
     </div>
 
     <!-- Invisible Tap Area over Center Doge Well -->
@@ -316,18 +336,13 @@
     </div>
   </div>
 
-  <!-- Ad Timer Modal -->
+  <!-- Ad Timer Reward Modal -->
   <div id="adModal" class="modal">
     <div class="modal-content">
-      <h3 style="color: #f39c12;">📺 Watching Sponsor Ad...</h3>
-      <p style="font-size: 12px; color: #ccc; margin: 10px 0;">Please wait <b id="adTimer">15</b> seconds to claim 0.25 DOGE.</p>
-     <div style="background: #111; padding: 10px; border-radius: 10px; border: 1px dashed #dda15e;">
-        <!-- BEGIN AADS AD UNIT 2462584 -->
-        <div id="frame" style="width: 100%; min-height: 90px; margin: auto; position: relative; z-index: 99999; display: flex; justify-content: center; align-items: center;">
-          <iframe data-aa='2462584' src='//acceptable.a-ads.com/2462584/?size=Adaptive'
-        style='border:0; padding:0; width:100%; height:90px; overflow:hidden; display:block; margin:auto'></iframe>
-        </div>
-        <!-- END AADS AD UNIT 2462584 -->
+      <h3 style="color: #f39c12;">📺 Sponsor Ad Reward</h3>
+      <p style="font-size: 13px; color: #ccc; margin: 15px 0;">Please wait <b id="adTimer" style="color: #f1c40f; font-size: 16px;">15</b> seconds to claim your <b style="color: #2ed573;">0.25 DOGE</b> reward!</p>
+      <div style="background: #111; padding: 15px; border-radius: 10px; border: 1px dashed #dda15e; font-size: 12px; color: #aaa;">
+        ⏳ Timer running... Enjoy exploring Doge Village!
       </div>
     </div>
   </div>
@@ -486,7 +501,7 @@
           modal.style.display = 'none';
           const { data, error } = await db.rpc('claim_ad_reward', { p_reward: 0.25 });
           if (error) return alert(error.message);
-          alert(`📺 Ad Complete!\nPaid toward Loan: ${data.debt_paid} DOGE\nAdded to Balance: ${data.added_to_balance} DOGE`);
+          alert(`📺 Ad Reward Claimed!\nPaid toward Loan: ${data.debt_paid} DOGE\nAdded to Balance: ${data.added_to_balance} DOGE`);
           await loadPlayerWallet();
         }
       }, 1000);
