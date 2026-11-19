@@ -426,14 +426,19 @@
     </div>
   </div>
 
-  <!-- Ad Timer Reward Modal -->
+  <!-- Ad Timer Reward Modal (Adsterra 300x250) -->
   <div id="adModal" class="modal">
-    <div class="modal-content">
+    <div class="modal-content" style="max-width: 380px;">
       <h3 style="color: #f39c12;">📺 Sponsor Ad Reward</h3>
-      <p style="font-size: 13px; color: #ccc; margin: 15px 0;">Please wait <b id="adTimer" style="color: #f1c40f; font-size: 16px;">15</b> seconds to claim your <b style="color: #2ed573;">0.25 DOGE</b> reward!</p>
-      <div style="background: #111; padding: 15px; border-radius: 10px; border: 1px dashed #dda15e; font-size: 12px; color: #aaa;">
-        ⏳ Timer running... Enjoy exploring Doge Village!
+      <p style="font-size: 13px; color: #ccc; margin: 10px 0;">
+        Please wait <b id="adTimer" style="color: #f1c40f; font-size: 16px;">15</b> seconds to claim <b style="color: #2ed573;">0.25 DOGE</b>!
+      </p>
+
+      <div id="adSlotContainer" style="width: 300px; min-height: 250px; margin: 10px auto; background: #111; border-radius: 10px; border: 1px dashed #dda15e; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+        ⏳ Loading ad...
       </div>
+
+      <button class="btn" style="background: #c0392b; margin-top: 10px;" onclick="cancelAdModal()">Cancel / Close</button>
     </div>
   </div>
 
@@ -484,6 +489,7 @@
     let currentUser = null;
     let playerData = { playable_balance: 0, loan_debt: 0 };
     let poolCount = "...";
+    let adCountdownInterval = null;
 
     function openAuthFromWelcome() {
       document.getElementById('welcomeScreen').style.display = 'none';
@@ -591,19 +597,80 @@
       }
     }
 
+    function clearAdSlot() {
+      if (adCountdownInterval) {
+        clearInterval(adCountdownInterval);
+        adCountdownInterval = null;
+      }
+      const container = document.getElementById('adSlotContainer');
+      if (container) {
+        container.innerHTML = '⏳ Loading ad...';
+      }
+    }
+
+    function cancelAdModal() {
+      clearAdSlot();
+      document.getElementById('adModal').style.display = 'none';
+    }
+
+    function renderAdsterra300x250() {
+      const container = document.getElementById('adSlotContainer');
+      container.innerHTML = '';
+
+      const iframe = document.createElement('iframe');
+      iframe.style.width = '300px';
+      iframe.style.height = '250px';
+      iframe.style.border = 'none';
+      iframe.style.overflow = 'hidden';
+      iframe.setAttribute('scrolling', 'no');
+
+      container.appendChild(iframe);
+
+      const doc = iframe.contentWindow.document;
+      doc.open();
+      doc.write(`
+        <!DOCTYPE html>
+        <html>
+        <head><style>body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:#111;}</style></head>
+        <body>
+          <script>
+            atOptions = {
+              'key' : 'f79d30e538cadf389ed6c3cc9d40feae',
+              'format' : 'iframe',
+              'height' : 250,
+              'width' : 300,
+              'params' : {}
+            };
+          <\/script>
+          <script src="https://bauval.org/22/f79d30e538cadf389ed6c3cc9d40feae"><\/script>
+        </body>
+        </html>
+      `);
+      doc.close();
+    }
+
     function watchAd() {
       if (!currentUser) return openAuthFromWelcome();
+      clearAdSlot();
+
       const modal = document.getElementById('adModal');
       const timerEl = document.getElementById('adTimer');
       let seconds = 15;
       timerEl.innerText = seconds;
       modal.style.display = 'flex';
 
-      const interval = setInterval(async () => {
+      renderAdsterra300x250();
+
+      adCountdownInterval = setInterval(async () => {
+        if (document.getElementById('adModal').style.display !== 'flex') {
+          clearAdSlot();
+          return;
+        }
         seconds--;
         timerEl.innerText = seconds;
+
         if (seconds <= 0) {
-          clearInterval(interval);
+          clearAdSlot();
           modal.style.display = 'none';
           const { data, error } = await db.rpc('claim_ad_reward', { p_reward: 0.25 });
           if (error) return alert(error.message);
