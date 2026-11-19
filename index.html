@@ -23,6 +23,68 @@
       padding: 20px;
     }
 
+    /* Welcome / Guest Home Overlay */
+    .welcome-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(12, 8, 4, 0.72);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 90;
+      padding: 20px;
+    }
+
+    .welcome-card {
+      background: rgba(34, 22, 11, 0.96);
+      border: 2px solid #dda15e;
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 520px;
+      width: 100%;
+      text-align: center;
+      color: #fff;
+      box-shadow: 0 14px 40px rgba(0,0,0,0.85);
+    }
+
+    .welcome-card h1 {
+      color: #f1c40f;
+      font-size: 28px;
+      margin-bottom: 10px;
+      text-shadow: 1px 2px 4px #000;
+    }
+
+    .welcome-card p {
+      font-size: 14px;
+      color: #f5ebd6;
+      line-height: 1.55;
+      margin-bottom: 18px;
+    }
+
+    .welcome-features {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 22px;
+      text-align: left;
+    }
+
+    .feature-box {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(221, 161, 94, 0.6);
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 12px;
+    }
+
+    .feature-box b {
+      display: block;
+      color: #f1c40f;
+      margin-bottom: 4px;
+      font-size: 13px;
+    }
+
     /* Top Right Compact Dashboard Panel */
     .dashboard-panel {
       position: absolute;
@@ -90,7 +152,6 @@
     .btn-withdraw { background: #2980b9; box-shadow: 0 3px 0px #1c5980; }
     .btn-logout { background: #555; font-size: 10px; padding: 4px; margin-top: 2px; }
 
-    /* Permanent Homepage Ad Container */
     .homepage-ad-box {
       margin-top: 10px;
       background: rgba(20, 10, 5, 0.9);
@@ -157,7 +218,7 @@
       font-size: 13px; background: #fff; color: #000;
     }
 
-    /* CLASSIC LUDO BOARD MODAL */
+    /* CLASSIC LUDO BOARD MODAL WITH TOGGLEABLE BOT */
     .ludo-modal-box {
       background: #1e150c;
       border: 3px solid #dda15e;
@@ -272,12 +333,42 @@
 </head>
 <body>
 
+  <!-- GUEST WELCOME HOME SCREEN (Shown when not logged in) -->
+  <div id="welcomeScreen" class="welcome-overlay">
+    <div class="welcome-card">
+      <h1>🐕 Welcome to Doge Village!</h1>
+      <p>
+        Explore the village, join the <b>Doge Well 10x FIFO Pool</b>, play <b>Classic Ludo</b>,
+        and earn DOGE rewards through sponsor ads or starter micro-loans.
+      </p>
+
+      <div class="welcome-features">
+        <div class="feature-box">
+          <b>🌊 Doge Well</b>
+          Join with 1 DOGE in a FIFO queue for a 10x pool payout.
+        </div>
+        <div class="feature-box">
+          <b>🎲 Classic Ludo</b>
+          Enter matches with 1 DOGE and compete for pot rewards.
+        </div>
+        <div class="feature-box">
+          <b>📺 Ads & Loan</b>
+          Claim ad rewards or borrow 1 DOGE when balance is under 1.
+        </div>
+      </div>
+
+      <button class="btn btn-ludo" style="padding: 12px 16px; font-size: 14px;" onclick="openAuthFromWelcome()">
+        🚀 Login / Enter Village
+      </button>
+    </div>
+  </div>
+
   <div class="village-fullscreen">
 
     <!-- Top Right Compact Dashboard Panel with Permanent Homepage Ad -->
     <div class="dashboard-panel">
       <div style="font-size: 11px; color: #f1c40f; margin-bottom: 5px; font-weight: bold;">
-        👤 <span id="userEmail">Loading...</span>
+        👤 <span id="userEmail">Guest Visitor</span>
       </div>
 
       <div class="stats-row">
@@ -308,12 +399,10 @@
 
       <!-- PERMANENT HOMEPAGE A-ADS BANNER (#2462584) -->
       <div class="homepage-ad-box">
-        <!-- BEGIN AADS AD UNIT 2462584 -->
         <div id="frame" style="width: 100%; min-height: 60px; margin: auto; position: relative; z-index: 5; display: flex; justify-content: center; align-items: center;">
           <iframe data-aa='2462584' src='//acceptable.a-ads.com/2462584/?size=Adaptive'
             style='border:0; padding:0; width:100%; height:60px; overflow:hidden; display:block; margin:auto'></iframe>
         </div>
-        <!-- END AADS AD UNIT 2462584 -->
       </div>
     </div>
 
@@ -333,6 +422,7 @@
       <input type="password" id="authPassword" placeholder="Enter password (min 6 chars)">
       <button class="btn btn-ludo" style="margin-top: 6px;" onclick="loginUser()">Login</button>
       <button class="btn btn-ad" style="margin-top: 6px;" onclick="signupUser()">Create New Account</button>
+      <button class="btn btn-logout" style="margin-top: 8px;" onclick="backToWelcome()">← Back to Welcome Page</button>
     </div>
   </div>
 
@@ -395,6 +485,18 @@
     let playerData = { playable_balance: 0, loan_debt: 0 };
     let poolCount = "...";
 
+    function openAuthFromWelcome() {
+      document.getElementById('welcomeScreen').style.display = 'none';
+      document.getElementById('authModal').style.display = 'flex';
+    }
+
+    function backToWelcome() {
+      if (!currentUser) {
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('welcomeScreen').style.display = 'flex';
+      }
+    }
+
     setInterval(() => {
       const bubble = document.getElementById('waveBubble');
       bubble.style.display = 'block';
@@ -405,10 +507,12 @@
       const { data: { session } } = await db.auth.getSession();
       if (session) {
         currentUser = session.user;
+        document.getElementById('welcomeScreen').style.display = 'none';
         document.getElementById('authModal').style.display = 'none';
         await loadPlayerWallet();
       } else {
-        document.getElementById('authModal').style.display = 'flex';
+        document.getElementById('authModal').style.display = 'none';
+        document.getElementById('welcomeScreen').style.display = 'flex';
       }
       await fetchWellPool();
       drawBoard();
@@ -423,6 +527,7 @@
       if (data.session) {
         currentUser = data.user;
         document.getElementById('authModal').style.display = 'none';
+        document.getElementById('welcomeScreen').style.display = 'none';
         await loadPlayerWallet();
       }
     }
@@ -434,6 +539,7 @@
       if (error) return alert("Login Error: " + error.message);
       currentUser = data.user;
       document.getElementById('authModal').style.display = 'none';
+      document.getElementById('welcomeScreen').style.display = 'none';
       await loadPlayerWallet();
     }
 
@@ -464,7 +570,7 @@
     }
 
     async function joinWellPool() {
-      if (!currentUser) return alert("Please login first!");
+      if (!currentUser) return openAuthFromWelcome();
       if (Number(playerData.playable_balance) < 1.0000) {
         return alert("⚠️ You need at least 1.00 DOGE in your balance to join the Well Pool!");
       }
@@ -486,7 +592,7 @@
     }
 
     function watchAd() {
-      if (!currentUser) return alert("Please login first!");
+      if (!currentUser) return openAuthFromWelcome();
       const modal = document.getElementById('adModal');
       const timerEl = document.getElementById('adTimer');
       let seconds = 15;
@@ -508,7 +614,7 @@
     }
 
     async function takeLoan() {
-      if (!currentUser) return alert("Please login first!");
+      if (!currentUser) return openAuthFromWelcome();
       if (Number(playerData.playable_balance) >= 1.0000) {
         return alert("⚠️ Your balance is 1.00 DOGE or more! Loans are only for balance < 1.00 DOGE.");
       }
@@ -519,7 +625,7 @@
     }
 
     async function repayLoanManual() {
-      if (!currentUser) return alert("Please login first!");
+      if (!currentUser) return openAuthFromWelcome();
       let debt = Number(playerData.loan_debt);
       let balance = Number(playerData.playable_balance);
 
@@ -546,6 +652,7 @@
     }
 
     function openWithdrawModal() {
+      if (!currentUser) return openAuthFromWelcome();
       document.getElementById('withdrawModal').style.display = 'flex';
     }
     function closeWithdrawModal() { document.getElementById('withdrawModal').style.display = 'none'; }
@@ -612,7 +719,7 @@
     let botActiveFlags = [false, false, false, false];
 
     async function startLudoMatch() {
-      if (!currentUser) return alert("Please login first!");
+      if (!currentUser) return openAuthFromWelcome();
       const { data, error } = await db.rpc('enter_ludo_match');
       if (error) return alert(error.message);
       if (!data.success) return alert("⚠️ " + data.message);
