@@ -435,8 +435,8 @@
         Please wait <b id="adTimer" style="color: #f1c40f; font-size: 16px;">15</b> seconds to claim <b style="color: #2ed573;">0.25 DOGE</b>!
       </p>
 
-      <div id="adSlotContainer" style="width: 300px; min-height: 250px; margin: 10px auto; background: #111; border-radius: 10px; border: 1px dashed #dda15e; overflow: hidden; display: flex; align-items: center; justify-content: center;">
-        ⏳ Loading ad...
+      <div id="adSlotContainer" style="width: 300px; min-height: 250px; margin: 10px auto; background: #17120c; border-radius: 10px; border: 1px dashed #dda15e; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px;">
+        <span style="font-size: 12px; color: #f1c40f;">⏳ Loading sponsor banner...</span>
       </div>
 
       <button class="btn" style="background: #c0392b; margin-top: 10px;" onclick="cancelAdModal()">Cancel / Close</button>
@@ -491,6 +491,7 @@
     let playerData = { playable_balance: 0, loan_debt: 0 };
     let poolCount = "...";
     let adCountdownInterval = null;
+    let adFallbackTimeout = null;
 
     function openAuthFromWelcome() {
       document.getElementById('welcomeScreen').style.display = 'none';
@@ -603,9 +604,13 @@
         clearInterval(adCountdownInterval);
         adCountdownInterval = null;
       }
+      if (adFallbackTimeout) {
+        clearTimeout(adFallbackTimeout);
+        adFallbackTimeout = null;
+      }
       const container = document.getElementById('adSlotContainer');
       if (container) {
-        container.innerHTML = '⏳ Loading ad...';
+        container.innerHTML = '<span style="font-size: 12px; color: #f1c40f;">⏳ Loading sponsor banner...</span>';
       }
     }
 
@@ -618,36 +623,31 @@
       const container = document.getElementById('adSlotContainer');
       container.innerHTML = '';
 
-      const iframe = document.createElement('iframe');
-      iframe.style.width = '300px';
-      iframe.style.height = '250px';
-      iframe.style.border = 'none';
-      iframe.style.overflow = 'hidden';
-      iframe.setAttribute('scrolling', 'no');
+      window.atOptions = {
+        'key' : 'f79d30e538cadf389ed6c3cc9d40feae',
+        'format' : 'iframe',
+        'height' : 250,
+        'width' : 300,
+        'params' : {}
+      };
 
-      container.appendChild(iframe);
+      const adScript = document.createElement('script');
+      adScript.type = 'text/javascript';
+      adScript.src = 'https://bauval.org/22/f79d30e538cadf389ed6c3cc9d40feae';
+      adScript.async = true;
 
-      const doc = iframe.contentWindow.document;
-      doc.open();
-      doc.write(`
-        <!DOCTYPE html>
-        <html>
-        <head><style>body{margin:0;padding:0;display:flex;justify-content:center;align-items:center;background:#111;}</style></head>
-        <body>
-          <script>
-            atOptions = {
-              'key' : 'f79d30e538cadf389ed6c3cc9d40feae',
-              'format' : 'iframe',
-              'height' : 250,
-              'width' : 300,
-              'params' : {}
-            };
-          <\/script>
-          <script src="https://bauval.org/22/f79d30e538cadf389ed6c3cc9d40feae"><\/script>
-        </body>
-        </html>
-      `);
-      doc.close();
+      adScript.onerror = () => {
+        container.innerHTML = '<div style="font-size:12px;color:#f1c40f;padding:10px;">⏳ Sponsor ad unavailable or blocked in this view.<br><span style="font-size:11px;color:#ccc;">Timer is still active to claim your reward.</span></div>';
+      };
+
+      container.appendChild(adScript);
+
+      adFallbackTimeout = setTimeout(() => {
+        const hasBanner = container.querySelector('iframe, img');
+        if (!hasBanner) {
+          container.innerHTML = '<div style="font-size:12px;color:#f1c40f;padding:10px;">⏳ Sponsor ad taking longer or no fill for this region.<br><span style="font-size:11px;color:#ccc;">Stay on modal until timer finishes to claim 0.25 DOGE.</span></div>';
+        }
+      }, 4500);
     }
 
     function watchAd() {
