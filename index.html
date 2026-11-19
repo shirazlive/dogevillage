@@ -219,6 +219,19 @@
       font-size: 13px; background: #fff; color: #000;
     }
 
+    .sponsor-fallback-btn {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 8px 14px;
+      background: #f39c12;
+      color: #111;
+      font-weight: 800;
+      font-size: 11px;
+      border-radius: 8px;
+      text-decoration: none;
+      box-shadow: 0 2px 0 rgba(0,0,0,0.4);
+    }
+
     /* CLASSIC LUDO BOARD MODAL WITH TOGGLEABLE BOT */
     .ludo-modal-box {
       background: #1e150c;
@@ -427,7 +440,7 @@
     </div>
   </div>
 
-  <!-- Ad Timer Reward Modal (Adsterra 300x250) -->
+  <!-- Ad Timer Reward Modal (Adsterra 300x250 + Clickable Sponsor Fallback) -->
   <div id="adModal" class="modal">
     <div class="modal-content" style="max-width: 380px;">
       <h3 style="color: #f39c12;">📺 Sponsor Ad Reward</h3>
@@ -435,7 +448,7 @@
         Please wait <b id="adTimer" style="color: #f1c40f; font-size: 16px;">15</b> seconds to claim <b style="color: #2ed573;">0.25 DOGE</b>!
       </p>
 
-      <div id="adSlotContainer" style="width: 300px; min-height: 250px; margin: 10px auto; background: #17120c; border-radius: 10px; border: 1px dashed #dda15e; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px;">
+      <div id="adSlotContainer" style="width: 300px; min-height: 250px; margin: 10px auto; background: #17120c; border-radius: 10px; border: 1px dashed #dda15e; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px;">
         <span style="font-size: 12px; color: #f1c40f;">⏳ Loading sponsor banner...</span>
       </div>
 
@@ -619,6 +632,18 @@
       document.getElementById('adModal').style.display = 'none';
     }
 
+    function showSponsorFallback(container) {
+      container.innerHTML = `
+        <div style="font-size:12px;color:#f1c40f;padding:10px;line-height:1.45;">
+          ⏳ Sponsor ad taking longer or no fill for this region.<br>
+          <a href="https://acceptable.a-ads.com/2462584/" target="_blank" rel="noopener noreferrer" class="sponsor-fallback-btn">
+            🔗 Open Sponsor Link
+          </a><br>
+          <span style="font-size:11px;color:#ccc;display:inline-block;margin-top:8px;">Stay until timer reaches 0 to claim 0.25 DOGE.</span>
+        </div>
+      `;
+    }
+
     function renderAdsterra300x250() {
       const container = document.getElementById('adSlotContainer');
       container.innerHTML = '';
@@ -637,7 +662,7 @@
       adScript.async = true;
 
       adScript.onerror = () => {
-        container.innerHTML = '<div style="font-size:12px;color:#f1c40f;padding:10px;">⏳ Sponsor ad unavailable or blocked in this view.<br><span style="font-size:11px;color:#ccc;">Timer is still active to claim your reward.</span></div>';
+        showSponsorFallback(container);
       };
 
       container.appendChild(adScript);
@@ -645,7 +670,7 @@
       adFallbackTimeout = setTimeout(() => {
         const hasBanner = container.querySelector('iframe, img');
         if (!hasBanner) {
-          container.innerHTML = '<div style="font-size:12px;color:#f1c40f;padding:10px;">⏳ Sponsor ad taking longer or no fill for this region.<br><span style="font-size:11px;color:#ccc;">Stay on modal until timer finishes to claim 0.25 DOGE.</span></div>';
+          showSponsorFallback(container);
         }
       }, 4500);
     }
