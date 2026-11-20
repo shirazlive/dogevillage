@@ -154,11 +154,12 @@
 
     .homepage-ad-box {
       margin-top: 10px;
-      background: rgba(20, 10, 5, 0.9);
+      background: rgba(20, 10, 5, 0.92);
       border: 1px dashed #dda15e;
       border-radius: 10px;
       padding: 6px;
       text-align: center;
+      min-height: 90px;
       overflow: visible;
     }
 
@@ -413,9 +414,9 @@
 
       <!-- PERMANENT HOMEPAGE A-ADS BANNER (#2462584) -->
       <div class="homepage-ad-box">
-        <div id="frame" style="width: 100%; margin: auto; position: relative; z-index: 20;">
-          <iframe data-aa='2462584' src='//acceptable.a-ads.com/2462584/'
-            style='border:0; padding:0; width:100%; height:100%; overflow:hidden; display:block; margin:auto'></iframe>
+        <div id="frame" style="width: 100%; min-height: 80px; margin: auto; position: relative; z-index: 20;">
+          <iframe data-aa="2462584" src="//acceptable.a-ads.com/2462584/"
+            style="border:0; padding:0; width:100%; min-height:80px; overflow:hidden; display:block; margin:auto;"></iframe>
         </div>
       </div>
     </div>
@@ -431,7 +432,7 @@
   <div id="authModal" class="modal">
     <div class="modal-content">
       <h3 style="color: #f39c12; margin-bottom: 6px;">🐕 Doge Village Login</h3>
-      <p style="font-size: 11px; color: #ccc; margin-bottom: 10px;">Earn via Ads or take 1 DOGE Loan when balance < 1.</p>
+      <p style="font-size: 11px; color: #ccc; margin-bottom: 10px;">Earn via Ads or take 1 DOGE Loan when balance &lt; 1.</p>
       <input type="email" id="authEmail" placeholder="Enter your email">
       <input type="password" id="authPassword" placeholder="Enter password (min 6 chars)">
       <button class="btn btn-ludo" style="margin-top: 6px;" onclick="loginUser()">Login</button>
@@ -453,7 +454,7 @@
           🔗 Sponsor Smartlink Ready!<br>
           <span style="font-size: 11px; color: #ccc;">Open the sponsor page and stay until timer hits 0.</span>
         </div>
-        <a href="https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab" target="_blank" rel="noopener noreferrer" class="smartlink-open-btn">
+        <a id="smartlinkAnchor" href="https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab" target="_blank" rel="noopener noreferrer" class="smartlink-open-btn">
           🚀 Open Sponsor Ad
         </a>
       </div>
@@ -486,6 +487,7 @@
 
         <div style="font-size: 11px; color: #f1c40f;" id="actionHint">Click ROLL DICE! (Click Red badge to toggle Bot)</div>
         <div class="ludo-status-log" id="ludoLog">Match started! First to bring all 4 tokens Home wins 3.5 DOGE!</div>
+        <button class="btn btn-logout" onclick="closeLudoModal()">✖ Close Board</button>
       </div>
     </div>
   </div>
@@ -507,6 +509,7 @@
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const SMARTLINK_URL = 'https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab';
+    document.getElementById('smartlinkAnchor').href = SMARTLINK_URL;
 
     let currentUser = null;
     let playerData = { playable_balance: 0, loan_debt: 0 };
@@ -677,7 +680,7 @@
       let balance = Number(playerData.playable_balance);
 
       if (debt <= 0) return alert("You have no active loan debt to repay!");
-      
+
       let repayAmount = debt >= 1.0000 ? 1.0000 : debt;
 
       if (balance < repayAmount) {
@@ -703,7 +706,7 @@
       document.getElementById('withdrawModal').style.display = 'flex';
     }
     function closeWithdrawModal() { document.getElementById('withdrawModal').style.display = 'none'; }
-    
+
     function submitWithdraw() {
       const email = document.getElementById('faucetEmail').value;
       if (!email.includes('@')) return alert("Enter valid FaucetPay email!");
@@ -763,7 +766,13 @@
     let ludoRunning = false;
     let turnTimerInterval = null;
     let timeLeft = 30;
-    let botActiveFlags = [false, false, false, false];
+    let botActiveFlags = [false, true, true, true];
+
+    function closeLudoModal() {
+      ludoRunning = false;
+      clearInterval(turnTimerInterval);
+      document.getElementById('ludoModal').style.display = 'none';
+    }
 
     async function startLudoMatch() {
       if (!currentUser) return openAuthFromWelcome();
@@ -778,7 +787,8 @@
       diceValue = 0;
       waitingForTokenClick = false;
       ludoRunning = true;
-      botActiveFlags = [false, false, false, false];
+      botActiveFlags = [false, true, true, true];
+      document.getElementById('leg0').innerText = "🔴 You (Red)";
 
       document.getElementById('ludoLog').innerHTML = "1.00 DOGE Entry Paid! Pot = 4.00 DOGE.<br>Roll 6 to bring token out!";
       updateTurnUI();
@@ -867,6 +877,34 @@
       }
     }
 
+    function drawBase(startCol, startRow, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(startCol * CELL, startRow * CELL, 6 * CELL, 6 * CELL);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect((startCol + 1) * CELL, (startRow + 1) * CELL, 4 * CELL, 4 * CELL);
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(startCol * CELL, startRow * CELL, 6 * CELL, 6 * CELL);
+    }
+
+    function fillCell(col, row, color) {
+      ctx.fillStyle = color;
+      ctx.fillRect(col * CELL, row * CELL, CELL, CELL);
+    }
+
+    function drawTriangle(x1, y1, x2, y2, x3, y3, color) {
+      ctx.beginPath();
+      ctx.moveTo(x1, y1);
+      ctx.lineTo(x2, y2);
+      ctx.lineTo(x3, y3);
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+      ctx.strokeStyle = "#222";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
     function drawBoard() {
       ctx.clearRect(0, 0, 450, 450);
       ctx.fillStyle = "#fff";
@@ -915,157 +953,45 @@
           const [col, row] = getTokenCoords(p, t);
           const offsetX = (p % 2 === 0 ? -3 : 3);
           const offsetY = (p < 2 ? -3 : 3);
-          const px = col * CELL + CELL/2 + (tokens[p][t] === -1 ? 0 : offsetX);
-          const py = row * CELL + CELL/2 + (tokens[p][t] === -1 ? 0 : offsetY);
-
-          const isMovable = (p === 0 && waitingForTokenClick && canTokenMove(0, t, diceValue));
-          if (isMovable) {
-            ctx.beginPath();
-            ctx.arc(px, py, 14, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255, 255, 0, 0.85)";
-            ctx.fill();
-          }
+          const drawX = (tokens[p][t] === -1 ? col * CELL : col * CELL + CELL / 2 + offsetX);
+          const drawY = (tokens[p][t] === -1 ? row * CELL : row * CELL + CELL / 2 + offsetY);
 
           ctx.beginPath();
-          ctx.arc(px, py, 10, 0, Math.PI * 2);
+          ctx.arc(drawX, drawY, 10, 0, Math.PI * 2);
           ctx.fillStyle = PLAYER_HEX[p];
           ctx.fill();
-          ctx.lineWidth = 2.5;
-          ctx.strokeStyle = "#fff";
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "#111";
           ctx.stroke();
-
-          ctx.fillStyle = "#fff";
-          ctx.font = "bold 10px Arial";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          ctx.fillText(t + 1, px, py);
         }
       }
     }
 
-    function drawBase(startCol, startRow, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(startCol * CELL, startRow * CELL, 6 * CELL, 6 * CELL);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect((startCol + 1) * CELL, (startRow + 1) * CELL, 4 * CELL, 4 * CELL);
-      const spots = [[1.5,1.5],[3.5,1.5],[1.5,3.5],[3.5,3.5]];
-      spots.forEach(([dc, dr]) => {
-        ctx.beginPath();
-        ctx.arc((startCol + dc) * CELL + CELL/2, (startRow + dr) * CELL + CELL/2, 12, 0, Math.PI * 2);
-        ctx.fillStyle = color;
-        ctx.fill();
-      });
+    function canMoveToken(pIdx, tIdx, roll) {
+      const pos = tokens[pIdx][tIdx];
+      if (pos === -1) return roll === 6;
+      if (pos + roll > 56) return false;
+      return true;
     }
 
-    function fillCell(col, row, color) {
-      ctx.fillStyle = color;
-      ctx.fillRect(col * CELL, row * CELL, CELL, CELL);
-    }
-
-    function drawTriangle(x1, y1, x2, y2, x3, y3, color) {
-      ctx.beginPath();
-      ctx.moveTo(x1, y1);
-      ctx.lineTo(x2, y2);
-      ctx.lineTo(x3, y3);
-      ctx.closePath();
-      ctx.fillStyle = color;
-      ctx.fill();
-      ctx.strokeStyle = "#333";
-      ctx.stroke();
-    }
-
-    function canTokenMove(pIdx, tIdx, roll) {
-      const step = tokens[pIdx][tIdx];
-      if (step === 56) return false;
-      if (step === -1) return roll === 6;
-      return (step + roll) <= 56;
-    }
-
-    function getMovableTokens(pIdx, roll) {
-      let valid = [];
-      for (let t = 0; t < 4; t++) {
-        if (canTokenMove(pIdx, t, roll)) valid.push(t);
-      }
-      return valid;
-    }
-
-    function handleHumanRoll() {
-      if (currentTurn !== 0 || waitingForTokenClick || !ludoRunning || botActiveFlags[0]) return;
-      document.getElementById('rollDiceBtn').disabled = true;
-      clearInterval(turnTimerInterval);
-
-      const diceEl = document.getElementById('diceBox');
-      diceEl.classList.add('dice-shake');
-
-      setTimeout(() => {
-        diceEl.classList.remove('dice-shake');
-        diceValue = Math.floor(Math.random() * 6) + 1;
-        diceEl.innerText = diceValue;
-        logLudo(`🔴 You rolled a <b>${diceValue}</b>!`);
-
-        const valid = getMovableTokens(0, diceValue);
-        if (valid.length === 0) {
-          document.getElementById('actionHint').innerText = "No valid moves! Passing turn...";
-          setTimeout(() => nextTurn(false), 900);
-        } else if (valid.length === 1) {
-          executeMove(0, valid[0]);
-        } else {
-          waitingForTokenClick = true;
-          document.getElementById('actionHint').innerText = "👆 Click your glowing token on the board!";
-          drawBoard();
-        }
-      }, 450);
-    }
-
-    canvas.addEventListener('click', (e) => {
-      if (!waitingForTokenClick || currentTurn !== 0) return;
-      const rect = canvas.getBoundingClientRect();
-      const scaleX = canvas.width / rect.width;
-      const scaleY = canvas.height / rect.height;
-      const clickX = (e.clientX - rect.left) * scaleX;
-      const clickY = (e.clientY - rect.top) * scaleY;
-
-      const valid = getMovableTokens(0, diceValue);
-      for (let t of valid) {
-        const [col, row] = getTokenCoords(0, t);
-        const px = col * CELL + CELL/2;
-        const py = row * CELL + CELL/2;
-        if (Math.hypot(clickX - px, clickY - py) <= 22) {
-          waitingForTokenClick = false;
-          executeMove(0, t);
-          return;
-        }
-      }
-    });
-
-    async function executeMove(pIdx, tIdx) {
-      let bonusTurn = (diceValue === 6);
-
-      if (tokens[pIdx][tIdx] === -1) {
+    function applyTokenMove(pIdx, tIdx, roll) {
+      if (tokens[pIdx][tIdx] === -1 && roll === 6) {
         tokens[pIdx][tIdx] = 0;
-        logLudo(`${PLAYER_NAMES[pIdx]} brought Token #${tIdx+1} out!`);
       } else {
-        tokens[pIdx][tIdx] += diceValue;
-        if (tokens[pIdx][tIdx] === 56) {
-          bonusTurn = true;
-          logLudo(`🏠 ${PLAYER_NAMES[pIdx]} got Token #${tIdx+1} HOME! (+Bonus Turn)`);
-        }
+        tokens[pIdx][tIdx] += roll;
       }
 
-      const step = tokens[pIdx][tIdx];
-      if (step >= 0 && step <= 50) {
-        const globalPos = (START_OFFSETS[pIdx] + step) % 52;
-        if (!SAFE_INDICES.includes(globalPos)) {
-          for (let opp = 0; opp < 4; opp++) {
-            if (opp === pIdx) continue;
+      if (tokens[pIdx][tIdx] >= 0 && tokens[pIdx][tIdx] <= 50) {
+        const myGlobal = (START_OFFSETS[pIdx] + tokens[pIdx][tIdx]) % 52;
+        if (!SAFE_INDICES.includes(myGlobal)) {
+          for (let op = 0; op < 4; op++) {
+            if (op === pIdx) continue;
             for (let ot = 0; ot < 4; ot++) {
-              const oppStep = tokens[opp][ot];
-              if (oppStep >= 0 && oppStep <= 50) {
-                const oppGlobal = (START_OFFSETS[opp] + oppStep) % 52;
-                if (oppGlobal === globalPos) {
-                  tokens[opp][ot] = -1;
-                  bonusTurn = true;
-                  logLudo(`⚔️ ${PLAYER_NAMES[pIdx]} CAPTURED ${PLAYER_NAMES[opp]}'s token! (+Bonus Turn)`);
+              if (tokens[op][ot] >= 0 && tokens[op][ot] <= 50) {
+                const opGlobal = (START_OFFSETS[op] + tokens[op][ot]) % 52;
+                if (opGlobal === myGlobal) {
+                  tokens[op][ot] = -1;
+                  logLudo(`💥 ${PLAYER_NAMES[pIdx]} captured ${PLAYER_NAMES[op]}!`);
                 }
               }
             }
@@ -1078,60 +1004,99 @@
       if (tokens[pIdx].every(s => s === 56)) {
         ludoRunning = false;
         clearInterval(turnTimerInterval);
-        if (pIdx === 0) {
-          const { data } = await db.rpc('settle_ludo_win', { p_winner_id: currentUser.id });
-          alert(`🎉 CONGRATULATIONS! YOU WON THE LUDO MATCH!\nTotal Prize: 3.50 DOGE\nAuto-Repaid Loan: ${data.debt_repaid} DOGE\nNet Added to Balance: ${data.net_win} DOGE`);
-        } else {
-          await db.rpc('settle_ludo_win', { p_winner_id: '00000000-0000-0000-0000-000000000000' });
-          alert(`😢 ${PLAYER_NAMES[pIdx]} won the match! You lost your 1 DOGE entry.`);
-        }
-        document.getElementById('ludoModal').style.display = 'none';
-        await loadPlayerWallet();
+        logLudo(`🏆 ${PLAYER_NAMES[pIdx]} won the match!`);
+        alert(`🏆 Match Finished! Winner: ${PLAYER_NAMES[pIdx]}`);
         return;
       }
 
-      nextTurn(bonusTurn);
-    }
-
-    function nextTurn(bonusTurn) {
-      if (!ludoRunning) return;
-      if (!bonusTurn) {
+      if (roll !== 6) {
         currentTurn = (currentTurn + 1) % 4;
       } else {
-        logLudo(`🎲 Bonus turn for ${PLAYER_NAMES[currentTurn]}!`);
+        logLudo(`🎲 Rolled 6! ${PLAYER_NAMES[pIdx]} gets a bonus roll.`);
       }
 
+      waitingForTokenClick = false;
       updateTurnUI();
-
-      if (currentTurn === 0 && !botActiveFlags[0]) {
-        document.getElementById('actionHint').innerText = "Your turn! Click ROLL DICE (30s timer).";
-        startTurnTimer();
-      } else {
-        document.getElementById('actionHint').innerText = `${PLAYER_NAMES[currentTurn]} is playing...`;
-        setTimeout(() => runBotTurn(currentTurn), 750);
-      }
+      startTurnTimer();
     }
 
-    function runBotTurn(botIdx) {
-      if (!ludoRunning || currentTurn !== botIdx) return;
+    function rollDiceAnimation(callback) {
+      const diceBox = document.getElementById('diceBox');
+      diceBox.classList.add('dice-shake');
+      let ticks = 0;
+      const spin = setInterval(() => {
+        diceBox.innerText = Math.floor(Math.random() * 6) + 1;
+        ticks++;
+        if (ticks >= 6) {
+          clearInterval(spin);
+          diceBox.classList.remove('dice-shake');
+          const finalVal = Math.floor(Math.random() * 6) + 1;
+          diceBox.innerText = finalVal;
+          callback(finalVal);
+        }
+      }, 60);
+    }
 
-      diceValue = Math.floor(Math.random() * 6) + 1;
-      document.getElementById('diceBox').innerText = diceValue;
-      logLudo(`${PLAYER_NAMES[botIdx]} rolled <b>${diceValue}</b>`);
+    function handleHumanRoll() {
+      if (currentTurn !== 0 || waitingForTokenClick || !ludoRunning || botActiveFlags[0]) return;
+      document.getElementById('rollDiceBtn').disabled = true;
 
-      const valid = getMovableTokens(botIdx, diceValue);
-      if (valid.length === 0) {
-        setTimeout(() => nextTurn(false), 600);
-        return;
+      rollDiceAnimation((val) => {
+        diceValue = val;
+        logLudo(`🔴 You rolled ${val}.`);
+        const movable = [0, 1, 2, 3].filter(t => canMoveToken(0, t, val));
+        if (movable.length === 0) {
+          logLudo("No valid token move.");
+          currentTurn = (currentTurn + 1) % 4;
+          updateTurnUI();
+          startTurnTimer();
+        } else if (movable.length === 1) {
+          applyTokenMove(0, movable[0], val);
+        } else {
+          waitingForTokenClick = true;
+          document.getElementById('actionHint').innerText = "Click one of your Red tokens on the board!";
+        }
+      });
+    }
+
+    canvas.addEventListener('click', (e) => {
+      if (!waitingForTokenClick || currentTurn !== 0 || !ludoRunning) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
+
+      for (let t = 0; t < 4; t++) {
+        if (!canMoveToken(0, t, diceValue)) continue;
+        const [col, row] = getTokenCoords(0, t);
+        const cx = (tokens[0][t] === -1 ? col * CELL : col * CELL + CELL / 2);
+        const cy = (tokens[0][t] === -1 ? row * CELL : row * CELL + CELL / 2);
+        const dist = Math.hypot(clickX - cx, clickY - cy);
+        if (dist <= 18) {
+          waitingForTokenClick = false;
+          document.getElementById('actionHint').innerText = "Click ROLL DICE!";
+          applyTokenMove(0, t, diceValue);
+          return;
+        }
       }
+    });
 
-      let chosen = valid[0];
-      for (let t of valid) {
-        if (tokens[botIdx][t] === -1 && diceValue === 6) { chosen = t; break; }
-        if (tokens[botIdx][t] > tokens[botIdx][chosen]) { chosen = t; }
-      }
-
-      setTimeout(() => executeMove(botIdx, chosen), 500);
+    function runBotTurn(pIdx) {
+      if (!ludoRunning || currentTurn !== pIdx) return;
+      rollDiceAnimation((val) => {
+        if (!ludoRunning) return;
+        logLudo(`${PLAYER_NAMES[pIdx]} rolled ${val}.`);
+        const movable = [0, 1, 2, 3].filter(t => canMoveToken(pIdx, t, val));
+        if (movable.length > 0) {
+          const chosen = movable[Math.floor(Math.random() * movable.length)];
+          applyTokenMove(pIdx, chosen, val);
+        } else {
+          currentTurn = (currentTurn + 1) % 4;
+          updateTurnUI();
+          startTurnTimer();
+        }
+      });
     }
   </script>
 </body>
