@@ -87,11 +87,10 @@
 
     /* Top Right Compact Dashboard Panel */
     .dashboard-panel {
-      position: absolute;
-      top: 20px;
-      right: 20px;
+      position: relative;
+      align-self: flex-end;
       z-index: 10;
-      background: rgba(30, 20, 10, 0.95);
+      background: rgba(30, 20, 10, 0.94);
       border: 2px solid #dda15e;
       border-radius: 16px;
       padding: 14px;
@@ -151,19 +150,20 @@
     .btn-withdraw { background: #2980b9; box-shadow: 0 3px 0px #1c5980; }
     .btn-logout { background: #555; font-size: 10px; padding: 4px; margin-top: 2px; }
 
-    /* Unclipped Visible Ad Container */
+    /* Clean Rectangular Banner Strip */
     .homepage-ad-box {
       margin-top: 10px;
       background: rgba(20, 10, 5, 0.95);
       border: 1px dashed #dda15e;
       border-radius: 10px;
-      padding: 6px;
+      padding: 4px;
       text-align: center;
       width: 100%;
-      min-height: 90px;
-      height: auto;
-      overflow: visible;
-      display: block;
+      height: 64px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
     .well-click-target {
@@ -383,7 +383,7 @@
 
   <div class="village-fullscreen">
 
-    <!-- Top Right Compact Dashboard Panel with Permanent Homepage Ad -->
+    <!-- Top Right Compact Dashboard Panel -->
     <div class="dashboard-panel">
       <div style="font-size: 11px; color: #f1c40f; margin-bottom: 5px; font-weight: bold;">
         👤 <span id="userEmail">Guest Visitor</span>
@@ -415,12 +415,12 @@
         <button class="btn btn-logout" onclick="logoutUser()">🚪 Logout</button>
       </div>
 
-      <!-- PERMANENT HOMEPAGE A-ADS BANNER (#2462584) -->
+      <!-- RECTANGULAR HOMEPAGE A-ADS BANNER (#2462584) -->
       <div class="homepage-ad-box">
         <!-- BEGIN AADS AD UNIT 2462584 -->
-        <div id="frame" style="width: 100%; min-height: 90px; height: auto; margin: auto; position: relative; z-index: 99998;">
+        <div id="frame" style="width: 100%; height: 56px; margin: auto; position: relative; z-index: 99998;">
           <iframe data-aa="2462584" src="//acceptable.a-ads.com/2462584/?size=Adaptive"
-            style="border:0; padding:0; width:100%; min-height:90px; height:auto; overflow:visible; display:block; margin:auto;"></iframe>
+            style="border:0; padding:0; width:100%; height:56px; overflow:hidden; display:block; margin:auto;"></iframe>
         </div>
         <!-- END AADS AD UNIT 2462584 -->
       </div>
