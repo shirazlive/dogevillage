@@ -17,73 +17,74 @@
       height: 100vh;
       background: url('village.png') no-repeat center center;
       background-size: cover;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
       padding: 20px;
     }
 
-    /* Non-blocking Guest Welcome Strip/Card (No full-screen blur overlay) */
+    /* Compact Top-Left Guest Welcome/Login Card */
     .welcome-banner-card {
       display: none;
-      position: relative;
+      position: absolute;
+      top: 20px;
+      left: 20px;
       z-index: 15;
       background: rgba(34, 22, 11, 0.94);
       border: 2px solid #dda15e;
-      border-radius: 16px;
-      padding: 16px 20px;
-      max-width: 580px;
+      border-radius: 14px;
+      padding: 12px 14px;
+      max-width: 390px;
       width: 100%;
       color: #fff;
-      box-shadow: 0 10px 28px rgba(0,0,0,0.75);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.75);
     }
 
     .welcome-banner-card h1 {
       color: #f1c40f;
-      font-size: 20px;
-      margin-bottom: 6px;
+      font-size: 16px;
+      margin-bottom: 4px;
       text-shadow: 1px 2px 3px #000;
     }
 
     .welcome-banner-card p {
-      font-size: 12px;
+      font-size: 11px;
       color: #f5ebd6;
-      line-height: 1.45;
-      margin-bottom: 12px;
+      line-height: 1.35;
+      margin-bottom: 8px;
     }
 
     .welcome-features {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 6px;
+      margin-bottom: 10px;
       text-align: left;
     }
 
     .feature-box {
       background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(221, 161, 94, 0.6);
-      border-radius: 10px;
-      padding: 8px 10px;
-      font-size: 11px;
+      border: 1px solid rgba(221, 161, 94, 0.55);
+      border-radius: 8px;
+      padding: 6px 7px;
+      font-size: 10px;
+      line-height: 1.25;
     }
 
     .feature-box b {
       display: block;
       color: #f1c40f;
       margin-bottom: 2px;
-      font-size: 12px;
+      font-size: 10.5px;
     }
 
     /* Top Right Compact Dashboard Panel */
     .dashboard-panel {
-      position: relative;
-      align-self: flex-end;
+      position: absolute;
+      top: 20px;
+      right: 20px;
       z-index: 10;
       background: rgba(30, 20, 10, 0.94);
       border: 2px solid #dda15e;
       border-radius: 16px;
-      padding: 14px;
+      padding: 12px;
       width: 315px;
       box-shadow: 0 8px 25px rgba(0,0,0,0.7);
       color: #fff;
@@ -96,29 +97,29 @@
       background: rgba(255, 255, 255, 0.1);
       border: 1px solid #dda15e;
       border-radius: 10px;
-      padding: 8px 10px;
-      margin-bottom: 8px;
+      padding: 7px 10px;
+      margin-bottom: 7px;
     }
 
-    .balance-val { font-size: 16px; font-weight: 800; color: #2ed573; text-shadow: 1px 1px 2px #000; }
-    .debt-val { font-size: 14px; font-weight: 800; color: #ff4757; text-shadow: 1px 1px 2px #000; }
+    .balance-val { font-size: 15px; font-weight: 800; color: #2ed573; text-shadow: 1px 1px 2px #000; }
+    .debt-val { font-size: 13px; font-weight: 800; color: #ff4757; text-shadow: 1px 1px 2px #000; }
 
     .queue-box {
       background: rgba(212, 163, 115, 0.25);
       border-radius: 8px;
-      padding: 7px 10px;
+      padding: 6px 10px;
       font-size: 11px;
-      margin-bottom: 10px;
+      margin-bottom: 8px;
       border: 1px solid #dda15e;
       text-align: center;
       color: #fffae6;
     }
 
-    .btn-grid { display: flex; flex-direction: column; gap: 6px; }
+    .btn-grid { display: flex; flex-direction: column; gap: 5px; }
 
     .btn {
       width: 100%;
-      padding: 8px 8px;
+      padding: 7px 8px;
       font-size: 11px;
       font-weight: bold;
       border: none;
@@ -142,14 +143,14 @@
 
     /* Clean Rectangular Banner Strip */
     .homepage-ad-box {
-      margin-top: 10px;
+      margin-top: 8px;
       background: rgba(20, 10, 5, 0.95);
       border: 1px dashed #dda15e;
       border-radius: 10px;
       padding: 4px;
       text-align: center;
       width: 100%;
-      height: 64px;
+      height: 62px;
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -343,30 +344,30 @@
 
   <div class="village-fullscreen">
 
-    <!-- Clean Non-Blocking Guest Welcome Card (Shown when not logged in) -->
+    <!-- Compact Top-Left Guest Welcome Card -->
     <div id="welcomeScreen" class="welcome-banner-card">
       <h1>🐕 Welcome to Doge Village!</h1>
       <p>
-        Explore the village, join the <b>Doge Well 10x FIFO Pool</b>, play <b>Classic Ludo</b>,
-        and earn DOGE rewards through sponsor ads or starter micro-loans.
+        Join the <b>Doge Well 10x FIFO Pool</b>, play <b>Classic Ludo</b>,
+        and earn DOGE rewards via sponsor ads or 1 DOGE loans.
       </p>
 
       <div class="welcome-features">
         <div class="feature-box">
           <b>🌊 Doge Well</b>
-          Join with 1 DOGE in a FIFO queue for a 10x pool payout.
+          1 DOGE FIFO queue for 10x pool payout.
         </div>
         <div class="feature-box">
           <b>🎲 Classic Ludo</b>
-          Enter matches with 1 DOGE and compete for pot rewards.
+          1 DOGE entry matches for pot rewards.
         </div>
         <div class="feature-box">
           <b>📺 Ads & Loan</b>
-          Claim ad rewards or borrow 1 DOGE when balance is under 1.
+          Ad rewards or 1 DOGE loan under 1 balance.
         </div>
       </div>
 
-      <button class="btn btn-ludo" style="padding: 10px 14px; font-size: 13px;" onclick="openAuthFromWelcome()">
+      <button class="btn btn-ludo" style="padding: 8px 12px; font-size: 12px;" onclick="openAuthFromWelcome()">
         🚀 Login / Enter Village
       </button>
     </div>
@@ -406,9 +407,9 @@
       <!-- RECTANGULAR HOMEPAGE A-ADS BANNER (#2462584) -->
       <div class="homepage-ad-box">
         <!-- BEGIN AADS AD UNIT 2462584 -->
-        <div id="frame" style="width: 100%; height: 56px; margin: auto; position: relative; z-index: 99998;">
+        <div id="frame" style="width: 100%; height: 54px; margin: auto; position: relative; z-index: 99998;">
           <iframe data-aa="2462584" src="//acceptable.a-ads.com/2462584/?size=Adaptive"
-            style="border:0; padding:0; width:100%; height:56px; overflow:hidden; display:block; margin:auto;"></iframe>
+            style="border:0; padding:0; width:100%; height:54px; overflow:hidden; display:block; margin:auto;"></iframe>
         </div>
         <!-- END AADS AD UNIT 2462584 -->
       </div>
