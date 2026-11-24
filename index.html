@@ -331,8 +331,7 @@
       font-size: 11px;
       font-weight: bold;
     }
-    .leg-item { padding: 5px 6px; border-radius: 6px; color: #fff; text-shadow: 1px 1px 1px #000; cursor: pointer; transition: transform 0.1s; }
-    .leg-item:active { transform: scale(0.96); }
+    .leg-item { padding: 5px 6px; border-radius: 6px; color: #fff; text-shadow: 1px 1px 1px #000; }
   </style>
 </head>
 <body>
@@ -409,7 +408,6 @@
     <div id="waveBubble" class="wave-bubble">🌊 Doge Well mein 1 DOGE donate kro aur 10x jeeto! 🐕</div>
   </div>
 
-  <!-- Login / Signup Modal -->
   <div id="authModal" class="modal">
     <div class="modal-content">
       <h3 style="color: #f39c12; margin-bottom: 6px;">🐕 Doge Village Login</h3>
@@ -422,7 +420,6 @@
     </div>
   </div>
 
-  <!-- Ad Timer Reward Modal -->
   <div id="adModal" class="modal">
     <div class="modal-content" style="max-width: 380px;">
       <h3 style="color: #f39c12;">📺 Sponsor Ad Reward</h3>
@@ -444,7 +441,6 @@
     </div>
   </div>
 
-  <!-- 30-SECOND REAL-USER MATCHMAKING LOBBY MODAL -->
   <div id="lobbyModal" class="modal">
     <div class="modal-content" style="max-width: 400px;">
       <h3 style="color: #f1c40f; margin-bottom: 6px;">🔎 Finding Real Players...</h3>
@@ -461,7 +457,6 @@
     </div>
   </div>
 
-  <!-- CLASSIC LUDO BOARD MODAL -->
   <div id="ludoModal" class="modal">
     <div class="ludo-modal-box">
       <canvas id="ludoCanvas" width="450" height="450"></canvas>
@@ -490,7 +485,6 @@
     </div>
   </div>
 
-  <!-- FaucetPay Withdraw Modal -->
   <div id="withdrawModal" class="modal">
     <div class="modal-content">
       <h3 style="color: #f39c12; margin-bottom: 5px;">💸 FaucetPay Payout</h3>
@@ -900,7 +894,7 @@
     const SEAT_ICONS = ["🔴 Red", "🟢 Green", "🟡 Yellow", "🔵 Blue"];
 
     let seatsState = [];
-    let mySeatIndex = 0;
+    let mySeatIndex = -1;
     let tokens = [[-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1]];
     let currentTurn = 0;
     let diceValue = 0;
@@ -915,27 +909,51 @@
         { user_id: null, username: "MoonPup_99", is_bot: true }
       ];
 
+      // Put real players first in join order (Seat 0 = Red, Seat 1 = Green, etc.)
+      const realPlayers = (lobbyPlayers || []).filter(p => !p.is_bot);
+      const botPlayers = (lobbyPlayers || []).filter(p => p.is_bot);
+
       const result = [];
       let botCursor = 0;
       for (let i = 0; i < 4; i++) {
-        if (lobbyPlayers[i]) {
+        if (realPlayers[i]) {
           result.push({
             seat: i,
-            user_id: lobbyPlayers[i].user_id,
-            username: lobbyPlayers[i].username,
-            is_bot: Boolean(lobbyPlayers[i].is_bot)
+            user_id: realPlayers[i].user_id,
+            username: realPlayers[i].username,
+            is_bot: false
           });
-        } else {
-          const b = fallbackBots[botCursor++] || { user_id: null, username: `Bot_${i + 1}`, is_bot: true };
+        } else if (botPlayers[botCursor]) {
+          const bp = botPlayers[botCursor++];
           result.push({
             seat: i,
             user_id: null,
-            username: b.username,
+            username: bp.username,
+            is_bot: true
+          });
+        } else {
+          const fb = fallbackBots[Math.min(botCursor++, fallbackBots.length - 1)];
+          result.push({
+            seat: i,
+            user_id: null,
+            username: fb.username,
             is_bot: true
           });
         }
       }
       return result;
+    }
+
+    function resolveMySeatIndex(seatsArr) {
+      if (!currentUser || !Array.isArray(seatsArr)) return -1;
+      const byId = seatsArr.findIndex(s => !s.is_bot && s.user_id && s.user_id === currentUser.id);
+      if (byId >= 0) return byId;
+
+      const myPrefix = (currentUser.email || "").split("@")[0].toLowerCase();
+      const byName = seatsArr.findIndex(s => !s.is_bot && s.username && s.username.toLowerCase() === myPrefix);
+      if (byName >= 0) return byName;
+
+      return -1;
     }
 
     async function initOrJoinSharedRoom(roomId, lobbyPlayers) {
@@ -945,8 +963,7 @@
       if (playBtn) playBtn.disabled = false;
 
       const desiredSeats = buildSeatsFromLobby(lobbyPlayers);
-      const myFound = desiredSeats.findIndex(s => s.user_id && currentUser && s.user_id === currentUser.id);
-      mySeatIndex = myFound >= 0 ? myFound : 0;
+      mySeatIndex = resolveMySeatIndex(desiredSeats);
 
       const { data: existingRoom } = await db
         .from('match_rooms')
@@ -978,9 +995,9 @@
         let mergedSeats = Array.isArray(roomRow.seats) && roomRow.seats.length === 4 ? [...roomRow.seats] : desiredSeats;
         let changed = false;
         for (let i = 0; i < 4; i++) {
-          const lp = desiredSeats[i];
-          if (lp && !lp.is_bot && lp.user_id && (!mergedSeats[i] || mergedSeats[i].user_id !== lp.user_id)) {
-            mergedSeats[i] = lp;
+          const ds = desiredSeats[i];
+          if (ds && !ds.is_bot && ds.user_id && (!mergedSeats[i] || mergedSeats[i].user_id !== ds.user_id)) {
+            mergedSeats[i] = ds;
             changed = true;
           }
         }
@@ -1057,9 +1074,9 @@
         ? row.seats
         : buildSeatsFromLobby([]);
 
-      const foundIdx = seatsState.findIndex(s => s.user_id && currentUser && s.user_id === currentUser.id);
-      if (foundIdx >= 0) {
-        mySeatIndex = foundIdx;
+      const resolvedIdx = resolveMySeatIndex(seatsState);
+      if (resolvedIdx >= 0) {
+        mySeatIndex = resolvedIdx;
       }
 
       tokens = Array.isArray(row.tokens)
@@ -1076,7 +1093,7 @@
         const s = seatsState[i];
         const legEl = document.getElementById(`leg${i}`);
         if (legEl && s) {
-          const isMe = (!s.is_bot && s.user_id === currentUser?.id);
+          const isMe = (!s.is_bot && i === mySeatIndex);
           const botTag = s.is_bot ? " 🤖" : "";
           const youTag = isMe ? " (YOU)" : "";
           legEl.innerText = `${SEAT_ICONS[i]}: ${s.username}${youTag}${botTag}`;
@@ -1114,13 +1131,13 @@
       const activeSeat = seatsState[currentTurn];
       if (!activeSeat) return false;
 
-      if (!activeSeat.is_bot && activeSeat.user_id === currentUser?.id) {
+      if (!activeSeat.is_bot && currentTurn === mySeatIndex) {
         return true;
       }
 
       if (activeSeat.is_bot) {
-        const firstRealSeat = seatsState.find(s => !s.is_bot && s.user_id);
-        return Boolean(firstRealSeat && firstRealSeat.user_id === currentUser?.id);
+        const firstRealIdx = seatsState.findIndex(s => !s.is_bot && s.user_id);
+        return firstRealIdx >= 0 && firstRealIdx === mySeatIndex;
       }
 
       return false;
@@ -1203,7 +1220,7 @@
 
     function updateTurnUI() {
       const activeSeat = seatsState[currentTurn] || { username: "Player", is_bot: true };
-      const isMyTurn = (!activeSeat.is_bot && activeSeat.user_id === currentUser?.id);
+      const isMyTurn = (!activeSeat.is_bot && currentTurn === mySeatIndex);
 
       const banner = document.getElementById('turnBanner');
       banner.style.background = PLAYER_HEX[currentTurn] || COLORS.red;
@@ -1390,7 +1407,7 @@
 
     function handleHumanRoll() {
       const activeSeat = seatsState[currentTurn];
-      const isMyTurn = activeSeat && !activeSeat.is_bot && activeSeat.user_id === currentUser?.id;
+      const isMyTurn = activeSeat && !activeSeat.is_bot && currentTurn === mySeatIndex;
       if (!isMyTurn || waitingForTokenClick || !ludoRunning) return;
 
       document.getElementById('rollDiceBtn').disabled = true;
@@ -1422,7 +1439,7 @@
 
     canvas.addEventListener('click', async (e) => {
       const activeSeat = seatsState[currentTurn];
-      const isMyTurn = activeSeat && !activeSeat.is_bot && activeSeat.user_id === currentUser?.id;
+      const isMyTurn = activeSeat && !activeSeat.is_bot && currentTurn === mySeatIndex;
       if (!waitingForTokenClick || !isMyTurn || !ludoRunning) return;
 
       const rect = canvas.getBoundingClientRect();
