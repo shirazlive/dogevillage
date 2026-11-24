@@ -398,7 +398,7 @@
         <button class="btn btn-well" onclick="joinWellPool()">🏊 Join Doge Well (1 DOGE)</button>
         <button class="btn btn-ad" onclick="watchAd()">📺 Watch Ad (+0.25 DOGE)</button>
         <button class="btn btn-loan" id="loanBtn" onclick="takeLoan()">🏦 Borrow 1 DOGE Loan</button>
-        <button class="btn btn-ludo" onclick="startLudoMatch()">🎲 Play Classic Ludo (1 DOGE)</button>
+        <button class="btn btn-ludo" id="playLudoBtn" onclick="startLudoMatch()">🎲 Play Classic Ludo (1 DOGE)</button>
         <button class="btn btn-repay" onclick="repayLoanManual()">💳 Repay Loan</button>
         <button class="btn btn-withdraw" onclick="openWithdrawModal()">💸 Withdraw to FaucetPay</button>
         <button class="btn btn-logout" onclick="logoutUser()">🚪 Logout</button>
@@ -457,6 +457,23 @@
     </div>
   </div>
 
+  <!-- 30-SECOND REAL-USER MATCHMAKING LOBBY MODAL -->
+  <div id="lobbyModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <h3 style="color: #f1c40f; margin-bottom: 6px;">🔎 Finding Real Players...</h3>
+      <p id="lobbyStatusText" style="font-size: 13px; color: #f5ebd6; margin: 8px 0;">
+        Checking active players in lobby...
+      </p>
+      <div style="font-size: 22px; font-weight: 900; color: #2ed573; margin: 10px 0;">
+        ⏱️ <span id="lobbyCountdown">30</span>s
+      </div>
+      <div id="lobbyPlayersList" style="font-size: 11px; color: #ccc; background: rgba(0,0,0,0.4); border: 1px solid #dda15e; border-radius: 8px; padding: 8px; margin-bottom: 10px; text-align: left;">
+        Waiting for lobby data...
+      </div>
+      <button class="btn" style="background: #c0392b;" onclick="cancelLobbyMatchmaking()">Cancel Matchmaking</button>
+    </div>
+  </div>
+
   <!-- CLASSIC LUDO BOARD MODAL WITH TOGGLEABLE BOT -->
   <div id="ludoModal" class="modal">
     <div class="ludo-modal-box">
@@ -509,6 +526,11 @@
     let playerData = { playable_balance: 0, loan_debt: 0 };
     let poolCount = "...";
     let adCountdownInterval = null;
+
+    // 30-Second Matchmaking State
+    let lobbyCountdownInterval = null;
+    let lobbyPollInterval = null;
+    let activeRoomId = null;
 
     function openAuthFromWelcome() {
       document.getElementById('welcomeScreen').style.display = 'none';
@@ -710,6 +732,145 @@
     }
 
     // ==========================================
+    // 30-SEC REAL-USER MATCHMAKING + BOT FALLBACK
+    // ==========================================
+    function clearLobbyTimers() {
+      if (lobbyCountdownInterval) {
+        clearInterval(lobbyCountdownInterval);
+        lobbyCountdownInterval = null;
+      }
+      if (lobbyPollInterval) {
+        clearInterval(lobbyPollInterval);
+        lobbyPollInterval = null;
+      }
+    }
+
+    function cancelLobbyMatchmaking() {
+      clearLobbyTimers();
+      activeRoomId = null;
+      document.getElementById('lobbyModal').style.display = 'none';
+      const playBtn = document.getElementById('playLudoBtn');
+      if (playBtn) playBtn.disabled = false;
+    }
+
+    function renderLobbyPlayers(players) {
+      const listEl = document.getElementById('lobbyPlayersList');
+      if (!listEl) return;
+      if (!players || players.length === 0) {
+        listEl.innerHTML = "Waiting for players...";
+        return;
+      }
+      listEl.innerHTML = players
+        .map((p, idx) => `${idx + 1}. <b>${p.username}</b> ${p.is_bot ? "🤖 (Bot)" : "👤 (Real)"}`)
+        .join("<br>");
+    }
+
+    async function startLudoMatch() {
+      if (!currentUser) return openAuthFromWelcome();
+
+      const playBtn = document.getElementById('playLudoBtn');
+      if (playBtn) playBtn.disabled = true;
+
+      // 1. Deduct 1 DOGE entry via existing RPC
+      const { data: entryData, error: entryError } = await db.rpc('enter_ludo_match');
+      if (entryError) {
+        if (playBtn) playBtn.disabled = false;
+        return alert(entryError.message);
+      }
+      if (!entryData.success) {
+        if (playBtn) playBtn.disabled = false;
+        return alert("⚠️ " + entryData.message);
+      }
+
+      await loadPlayerWallet();
+
+      // 2. Join or create a waiting room (< 30s old, real users first)
+      const { data: roomData, error: roomError } = await db.rpc('join_or_create_room');
+      if (roomError || !roomData || !roomData.success) {
+        if (playBtn) playBtn.disabled = false;
+        return alert("Matchmaking Error: " + (roomError?.message || roomData?.message || "Could not join room"));
+      }
+
+      activeRoomId = roomData.room_id;
+      let secondsLeft = typeof roomData.seconds_left === 'number' ? roomData.seconds_left : 30;
+
+      // Fetch current lobby members
+      let { data: players } = await db
+        .from('match_lobby')
+        .select('username, is_bot, status, joined_at')
+        .eq('room_id', activeRoomId)
+        .order('joined_at', { ascending: true });
+
+      // If 4 real players are already in the room, start right away!
+      if (roomData.status === 'playing' || (players && players.length >= 4)) {
+        launchLudoGameWithPlayers(activeRoomId, players || []);
+        return;
+      }
+
+      // Open 30-second lobby waiting modal
+      clearLobbyTimers();
+      const lobbyModal = document.getElementById('lobbyModal');
+      const countdownEl = document.getElementById('lobbyCountdown');
+      const statusTextEl = document.getElementById('lobbyStatusText');
+
+      countdownEl.innerText = secondsLeft;
+      statusTextEl.innerText = `Real players joined: ${roomData.player_count}/4. Waiting up to 30s for more real players...`;
+      renderLobbyPlayers(players);
+      lobbyModal.style.display = 'flex';
+
+      // Countdown every 1 second
+      lobbyCountdownInterval = setInterval(async () => {
+        secondsLeft -= 1;
+        if (secondsLeft > 0) {
+          countdownEl.innerText = secondsLeft;
+        } else {
+          clearLobbyTimers();
+          countdownEl.innerText = "0";
+          statusTextEl.innerText = "30s finished! Filling remaining seats with bots...";
+
+          const { data: botRes, error: botErr } = await db.rpc('fill_bots_and_start', {
+            p_room_id: activeRoomId
+          });
+
+          if (botErr || !botRes?.success) {
+            alert("Bot fill error: " + (botErr?.message || botRes?.message));
+            cancelLobbyMatchmaking();
+            return;
+          }
+
+          const { data: finalPlayers } = await db
+            .from('match_lobby')
+            .select('username, is_bot, status, joined_at')
+            .eq('room_id', activeRoomId)
+            .order('joined_at', { ascending: true });
+
+          launchLudoGameWithPlayers(activeRoomId, finalPlayers || []);
+        }
+      }, 1000);
+
+      // Poll every 2 seconds to detect newly joined real players
+      lobbyPollInterval = setInterval(async () => {
+        const { data: polledPlayers, error: pollErr } = await db
+          .from('match_lobby')
+          .select('username, is_bot, status, joined_at')
+          .eq('room_id', activeRoomId)
+          .order('joined_at', { ascending: true });
+
+        if (pollErr || !polledPlayers) return;
+
+        const realCount = polledPlayers.filter(p => !p.is_bot).length;
+        statusTextEl.innerText = `Real players in room: ${realCount}/4`;
+        renderLobbyPlayers(polledPlayers);
+
+        const isFullOrPlaying = polledPlayers.some(p => p.status === 'playing') || polledPlayers.length >= 4;
+        if (isFullOrPlaying) {
+          clearLobbyTimers();
+          launchLudoGameWithPlayers(activeRoomId, polledPlayers);
+        }
+      }, 2000);
+    }
+
+    // ==========================================
     // CLASSIC LUDO BOARD & TOGGLEABLE BOT ENGINE
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
@@ -750,8 +911,10 @@
     ];
 
     const START_OFFSETS = [0, 13, 26, 39];
-    const PLAYER_NAMES = ["🔴 You (Red)", "🟢 Ali (Green)", "🟡 Sara (Yellow)", "🔵 Khan (Blue)"];
+    const DEFAULT_PLAYER_NAMES = ["🔴 You (Red)", "🟢 Ali (Green)", "🟡 Sara (Yellow)", "🔵 Khan (Blue)"];
+    let PLAYER_NAMES = [...DEFAULT_PLAYER_NAMES];
     const PLAYER_HEX = [COLORS.red, COLORS.green, COLORS.yellow, COLORS.blue];
+    const SEAT_ICONS = ["🔴", "🟢", "🟡", "🔵"];
 
     let tokens = [[-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1]];
     let currentTurn = 0;
@@ -762,47 +925,81 @@
     let timeLeft = 30;
     let botActiveFlags = [false, true, true, true];
 
-    function closeLudoModal() {
-      ludoRunning = false;
-      clearInterval(turnTimerInterval);
-      document.getElementById('ludoModal').style.display = 'none';
-    }
+    function launchLudoGameWithPlayers(roomId, roomPlayers) {
+      clearLobbyTimers();
+      document.getElementById('lobbyModal').style.display = 'none';
+      const playBtn = document.getElementById('playLudoBtn');
+      if (playBtn) playBtn.disabled = false;
 
-    async function startLudoMatch() {
-      if (!currentUser) return openAuthFromWelcome();
-      const { data, error } = await db.rpc('enter_ludo_match');
-      if (error) return alert(error.message);
-      if (!data.success) return alert("⚠️ " + data.message);
+      // Map matched lobby players onto the 4 seats
+      const fallbackBots = [
+        { username: "Ali", is_bot: true },
+        { username: "Sara", is_bot: true },
+        { username: "Khan", is_bot: true }
+      ];
 
-      await loadPlayerWallet();
+      const seats = [];
+      for (let i = 0; i < 4; i++) {
+        if (roomPlayers[i]) {
+          seats.push(roomPlayers[i]);
+        } else {
+          seats.push(fallbackBots[Math.min(i - 1, fallbackBots.length - 1)]);
+        }
+      }
+
+      const realCount = seats.filter(s => !s.is_bot).length;
+      const botCount = seats.filter(s => s.is_bot).length;
+
+      botActiveFlags = seats.map((s, idx) => {
+        if (idx === 0) return false; // Current logged-in user starts manual on seat 0
+        return Boolean(s.is_bot);
+      });
+
+      PLAYER_NAMES = seats.map((s, idx) => {
+        const label = idx === 0 && !s.is_bot ? `${s.username} (You)` : s.username;
+        return `${SEAT_ICONS[idx]} ${label}`;
+      });
+
+      for (let i = 0; i < 4; i++) {
+        const legEl = document.getElementById(`leg${i}`);
+        if (legEl) {
+          legEl.innerText = seats[i].is_bot ? `${PLAYER_NAMES[i]} 🤖` : PLAYER_NAMES[i];
+        }
+      }
 
       tokens = [[-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1]];
       currentTurn = 0;
       diceValue = 0;
       waitingForTokenClick = false;
       ludoRunning = true;
-      botActiveFlags = [false, true, true, true];
-      document.getElementById('leg0').innerText = "🔴 You (Red)";
 
-      document.getElementById('ludoLog').innerHTML = "1.00 DOGE Entry Paid! Pot = 4.00 DOGE.<br>Roll 6 to bring token out!";
+      document.getElementById('ludoLog').innerHTML =
+        `Match started! Real Players: <b>${realCount}</b> | Bots: <b>${botCount}</b><br>Roll 6 to bring token out!`;
       updateTurnUI();
       drawBoard();
       document.getElementById('ludoModal').style.display = 'flex';
       startTurnTimer();
     }
 
+    function closeLudoModal() {
+      ludoRunning = false;
+      clearInterval(turnTimerInterval);
+      clearLobbyTimers();
+      document.getElementById('ludoModal').style.display = 'none';
+    }
+
     function toggleBotMode() {
       if (!ludoRunning) return;
       botActiveFlags[0] = !botActiveFlags[0];
       if (botActiveFlags[0]) {
-        document.getElementById('leg0').innerText = "🔴 You (Red) 🤖 [Bot Active]";
+        document.getElementById('leg0').innerText = `${PLAYER_NAMES[0]} 🤖 [Bot Active]`;
         logLudo("🤖 Autopilot enabled manually.");
         clearInterval(turnTimerInterval);
         if (currentTurn === 0) {
           setTimeout(() => runBotTurn(0), 500);
         }
       } else {
-        document.getElementById('leg0').innerText = "🔴 You (Red)";
+        document.getElementById('leg0').innerText = PLAYER_NAMES[0];
         logLudo("👤 Switched back to Manual mode!");
         if (currentTurn === 0) {
           startTurnTimer();
@@ -833,7 +1030,7 @@
           clearInterval(turnTimerInterval);
           if (currentTurn === 0 && !botActiveFlags[0]) {
             botActiveFlags[0] = true;
-            document.getElementById('leg0').innerText = "🔴 You (Red) 🤖 [Bot Active]";
+            document.getElementById('leg0').innerText = `${PLAYER_NAMES[0]} 🤖 [Bot Active]`;
             logLudo("⏱️ 30s timeout! Autopilot activated automatically.");
           }
           waitingForTokenClick = false;
@@ -854,7 +1051,7 @@
       if (botActiveFlags[currentTurn]) {
         banner.innerText = `${PLAYER_NAMES[currentTurn]} (🤖 BOT ACTIVE)`;
       } else {
-        banner.innerText = currentTurn === 0 ? "🔴 YOUR TURN (RED)" : `${PLAYER_NAMES[currentTurn]}'S TURN`;
+        banner.innerText = currentTurn === 0 ? `🔴 YOUR TURN (${PLAYER_NAMES[0]})` : `${PLAYER_NAMES[currentTurn]}'S TURN`;
       }
       document.getElementById('rollDiceBtn').disabled = (currentTurn !== 0 || waitingForTokenClick || !ludoRunning || botActiveFlags[0]);
     }
