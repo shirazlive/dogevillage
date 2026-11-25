@@ -852,7 +852,7 @@
     }
 
     // ==========================================
-    // SHARED REALTIME CLASSIC LUDO ENGINE (FIXED)
+    // SHARED REALTIME CLASSIC LUDO ENGINE (RELIABLE)
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
     const ctx = canvas.getContext('2d');
@@ -1129,7 +1129,7 @@
         lastStateSignature = sig;
         if ((forceLog || row.last_updated_by !== currentUser?.id) && diceValue >= 1 && diceValue <= 6) {
           const actorName = seatsState[currentTurn]?.username || SEAT_ICONS[currentTurn];
-          logLudo(`${SEAT_ICONS[currentTurn]} (${actorName}) -> dice ${diceValue}.`);
+          logLudo(`${SEAT_ICONS[currentTurn]} (${actorName}) -> rolled ${diceValue}.`);
         }
       }
 
@@ -1178,7 +1178,8 @@
         const activeSeat = seatsState[currentTurn];
         const canDrive = canCurrentClientDriveTurn();
 
-        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && elapsedSec >= 1) {
+        // Give bot turns a smooth, readable pace (~1.5s) so dice numbers and moves don't blur
+        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && elapsedSec >= 2) {
           botActionBusy = true;
           await executeTurnForSeat(currentTurn);
           return;
@@ -1224,12 +1225,12 @@
       if (!error && data) {
         applyRoomRowToUI(data, false);
       } else if (patch && Array.isArray(patch.tokens)) {
-        // Fallback so local state still advances cleanly even if select() returns empty
         tokens = patch.tokens.map(arr => [...arr]);
         currentTurn = typeof patch.current_turn === 'number' ? patch.current_turn : currentTurn;
         diceValue = typeof patch.dice_value === 'number' ? patch.dice_value : diceValue;
         sixCount = typeof patch.six_count === 'number' ? patch.six_count : sixCount;
         turnStartedAtMs = Date.now();
+        document.getElementById('diceBox').innerText = (diceValue >= 1 && diceValue <= 6) ? diceValue : "🎲";
         updateTurnUI();
         drawBoard();
       }
@@ -1538,7 +1539,7 @@
       const clickY = (e.clientY - rect.top) * scaleY;
 
       let chosenToken = -1;
-      let bestDist = 42;
+      let bestDist = 48;
 
       for (const t of movableTokenIndices) {
         const { x: cx, y: cy } = getTokenDrawCenter(mySeatIndex, t);
@@ -1549,7 +1550,6 @@
         }
       }
 
-      // If user clicked outside highlighted tokens, keep waiting so turn isn't lost
       if (chosenToken < 0) return;
 
       const rollToUse = diceValue;
@@ -1583,6 +1583,7 @@
       }
 
       const roll = Math.floor(Math.random() * 6) + 1;
+      document.getElementById('diceBox').innerText = roll;
       const nextSixStreak = (roll === 6) ? (sixCount + 1) : 0;
 
       if (nextSixStreak >= 3) {
