@@ -519,6 +519,9 @@
     let isRollingLocally = false;
     let isPushingState = false;
     let lastStateSignature = "";
+    let lastBannerText = "";
+    let lastHintText = "";
+    let lastTimerText = "";
 
     function openAuthFromWelcome() {
       document.getElementById('welcomeScreen').style.display = 'none';
@@ -852,7 +855,7 @@
     }
 
     // ==========================================
-    // SHARED REALTIME CLASSIC LUDO ENGINE (SMOOTH)
+    // SHARED REALTIME CLASSIC LUDO ENGINE (STABLE)
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
     const ctx = canvas.getContext('2d');
@@ -1028,6 +1031,9 @@
       waitingForTokenClick = false;
       movableTokenIndices = [];
       lastStateSignature = "";
+      lastBannerText = "";
+      lastHintText = "";
+      lastTimerText = "";
       document.getElementById('ludoLog').innerHTML = "Connected to shared room! Roll 6 or click highlighted tokens.";
       document.getElementById('ludoModal').style.display = 'flex';
 
@@ -1071,19 +1077,25 @@
         clearInterval(roomSyncPollInterval);
       }
       roomSyncPollInterval = setInterval(async () => {
-        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally || isPushingState) return;
+        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally || isPushingState || botActionBusy) return;
         const { data } = await db
           .from('match_rooms')
           .select('*')
           .eq('room_id', roomId)
           .maybeSingle();
-        if (data && ludoRunning && !waitingForTokenClick && !isRollingLocally && !isPushingState) {
+        if (data && ludoRunning && !waitingForTokenClick && !isRollingLocally && !isPushingState && !botActionBusy) {
           applyRoomRowToUI(data, false);
         }
-      }, 2500);
+      }, 5000);
     }
 
     function applyRoomRowToUI(row, forceLog = false) {
+      const sig = `${row.current_turn}|${row.dice_value}|${row.six_count}|${JSON.stringify(row.tokens)}|${row.status}|${row.turn_started_at || ''}`;
+      if (sig === lastStateSignature && !forceLog) {
+        return;
+      }
+      lastStateSignature = sig;
+
       seatsState = Array.isArray(row.seats) && row.seats.length === 4
         ? row.seats
         : buildSeatsFromLobby([]);
@@ -1098,7 +1110,6 @@
       diceValue = typeof row.dice_value === 'number' ? row.dice_value : 0;
       sixCount = typeof row.six_count === 'number' ? row.six_count : 0;
       turnStartedAtMs = row.turn_started_at ? new Date(row.turn_started_at).getTime() : Date.now();
-      botActionBusy = false;
 
       if (!waitingForTokenClick) {
         movableTokenIndices = [];
@@ -1111,26 +1122,15 @@
           const isMe = (!s.is_bot && i === mySeatIndex);
           const botTag = s.is_bot ? " 🤖" : "";
           const youTag = isMe ? " (YOU)" : "";
-          legEl.innerText = `${SEAT_ICONS[i]}: ${s.username}${youTag}${botTag}`;
+          const nextLabel = `${SEAT_ICONS[i]}: ${s.username}${youTag}${botTag}`;
+          if (legEl.innerText !== nextLabel) legEl.innerText = nextLabel;
         }
       }
 
       const diceBox = document.getElementById('diceBox');
       if (!isRollingLocally) {
-        if (diceValue >= 1 && diceValue <= 6) {
-          diceBox.innerText = diceValue;
-        } else {
-          diceBox.innerText = "🎲";
-        }
-      }
-
-      const sig = `${currentTurn}|${diceValue}|${sixCount}|${JSON.stringify(tokens)}|${row.status}|${row.updated_at || ''}`;
-      if (sig !== lastStateSignature) {
-        lastStateSignature = sig;
-        if ((forceLog || row.last_updated_by !== currentUser?.id) && diceValue >= 1 && diceValue <= 6) {
-          const actorName = seatsState[currentTurn]?.username || SEAT_ICONS[currentTurn];
-          logLudo(`${SEAT_ICONS[currentTurn]} (${actorName}) -> rolled ${diceValue}.`);
-        }
+        const nextDice = (diceValue >= 1 && diceValue <= 6) ? String(diceValue) : "🎲";
+        if (diceBox.innerText !== nextDice) diceBox.innerText = nextDice;
       }
 
       if (row.status === 'finished') {
@@ -1169,23 +1169,28 @@
       }
 
       turnClockInterval = setInterval(async () => {
-        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally || isPushingState) return;
+        if (!ludoRunning || !activeRoomId) return;
 
         const elapsedSec = Math.max(0, Math.floor((Date.now() - turnStartedAtMs) / 1000));
         const remaining = Math.max(0, 30 - elapsedSec);
-        document.getElementById('timerBadge').innerText = `⏳ Turn Time Left: ${remaining}s`;
+        const timerText = `⏳ Turn Time Left: ${remaining}s`;
+        if (timerText !== lastTimerText) {
+          lastTimerText = timerText;
+          document.getElementById('timerBadge').innerText = timerText;
+        }
+
+        if (waitingForTokenClick || isRollingLocally || isPushingState || botActionBusy) return;
 
         const activeSeat = seatsState[currentTurn];
         const canDrive = canCurrentClientDriveTurn();
 
-        // Give bot turns ~1.2s so dice rolls and bonus 6s are easy to read
-        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && elapsedSec >= 1) {
+        if (activeSeat && activeSeat.is_bot && canDrive && elapsedSec >= 1) {
           botActionBusy = true;
           await executeTurnForSeat(currentTurn);
           return;
         }
 
-        if (activeSeat && !activeSeat.is_bot && canDrive && remaining <= 0 && !botActionBusy) {
+        if (activeSeat && !activeSeat.is_bot && canDrive && remaining <= 0) {
           botActionBusy = true;
           sixCount = 0;
           const nextTurn = (currentTurn + 1) % 4;
@@ -1198,7 +1203,7 @@
             turn_started_at: new Date().toISOString()
           });
         }
-      }, 450);
+      }, 600);
     }
 
     async function pushRoomState(patch) {
@@ -1241,6 +1246,7 @@
       waitingForTokenClick = false;
       isRollingLocally = false;
       isPushingState = false;
+      botActionBusy = false;
       movableTokenIndices = [];
       clearInterval(turnClockInterval);
       clearInterval(roomSyncPollInterval);
@@ -1263,19 +1269,34 @@
       const isMyTurn = (!activeSeat.is_bot && currentTurn === mySeatIndex);
 
       const banner = document.getElementById('turnBanner');
-      banner.style.background = PLAYER_HEX[currentTurn] || COLORS.red;
+      const nextColor = PLAYER_HEX[currentTurn] || COLORS.red;
+      if (banner.style.background !== nextColor && banner.style.backgroundColor !== nextColor) {
+        banner.style.background = nextColor;
+      }
+
+      let bannerText = "";
+      let hintText = "";
 
       if (isMyTurn) {
-        banner.innerText = `🔥 YOUR TURN (${activeSeat.username} - ${SEAT_ICONS[currentTurn]})`;
-        document.getElementById('actionHint').innerText = waitingForTokenClick
+        bannerText = `🔥 YOUR TURN (${activeSeat.username} - ${SEAT_ICONS[currentTurn]})`;
+        hintText = waitingForTokenClick
           ? "Click any highlighted token on the board!"
           : "Click ROLL DICE!";
       } else if (activeSeat.is_bot) {
-        banner.innerText = `${SEAT_ICONS[currentTurn]} ${activeSeat.username} (🤖 BOT)`;
-        document.getElementById('actionHint').innerText = `Bot ${activeSeat.username} is playing...`;
+        bannerText = `${SEAT_ICONS[currentTurn]} ${activeSeat.username} (🤖 BOT)`;
+        hintText = `Bot ${activeSeat.username} is playing...`;
       } else {
-        banner.innerText = `${SEAT_ICONS[currentTurn]} ${activeSeat.username}'S TURN`;
-        document.getElementById('actionHint').innerText = `Waiting for ${activeSeat.username}...`;
+        bannerText = `${SEAT_ICONS[currentTurn]} ${activeSeat.username}'S TURN`;
+        hintText = `Waiting for ${activeSeat.username}...`;
+      }
+
+      if (bannerText !== lastBannerText) {
+        lastBannerText = bannerText;
+        banner.innerText = bannerText;
+      }
+      if (hintText !== lastHintText) {
+        lastHintText = hintText;
+        document.getElementById('actionHint').innerText = hintText;
       }
 
       document.getElementById('rollDiceBtn').disabled = (!isMyTurn || waitingForTokenClick || isRollingLocally || isPushingState || !ludoRunning);
@@ -1585,19 +1606,10 @@
       const roll = Math.floor(Math.random() * 6) + 1;
       const nextSixStreak = (roll === 6) ? (sixCount + 1) : 0;
       const movable = (nextSixStreak >= 3) ? [] : [0, 1, 2, 3].filter(t => canMoveToken(pIdx, t, roll));
-
-      // Show bot's dice roll first so a 6 is clearly visible before the move/next turn
-      document.getElementById('diceBox').innerText = roll;
-      logLudo(`${SEAT_ICONS[pIdx]} (${seatsState[pIdx]?.username || "Bot"}) rolled ${roll}.`);
-      await new Promise(resolve => setTimeout(resolve, 450));
-
-      if (!ludoRunning) {
-        botActionBusy = false;
-        return;
-      }
+      const actorName = seatsState[pIdx]?.username || "Bot";
 
       if (nextSixStreak >= 3) {
-        sixCount = 0;
+        logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} (3 sixes -> pass).`);
         await pushRoomState({
           tokens,
           current_turn: (pIdx + 1) % 4,
@@ -1612,12 +1624,13 @@
       if (movable.length > 0) {
         const chosen = movable[Math.floor(Math.random() * movable.length)];
         const nextState = computeNextStateAfterMove(pIdx, chosen, roll, nextSixStreak);
+        logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} & moved Token #${chosen + 1}.`);
         await pushRoomState(nextState);
         if (nextState.won) {
-          alert(`🏆 Match Finished! Winner: ${seatsState[pIdx]?.username || SEAT_ICONS[pIdx]}`);
+          alert(`🏆 Match Finished! Winner: ${actorName}`);
         }
       } else {
-        sixCount = 0;
+        logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} (no valid move).`);
         await pushRoomState({
           tokens,
           current_turn: (pIdx + 1) % 4,
