@@ -1077,20 +1077,20 @@
         clearInterval(roomSyncPollInterval);
       }
       roomSyncPollInterval = setInterval(async () => {
-        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally || isPushingState || botActionBusy) return;
+        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally || isPushingState) return;
         const { data } = await db
           .from('match_rooms')
           .select('*')
           .eq('room_id', roomId)
           .maybeSingle();
-        if (data && ludoRunning && !waitingForTokenClick && !isRollingLocally && !isPushingState && !botActionBusy) {
+        if (data && ludoRunning && !waitingForTokenClick && !isRollingLocally && !isPushingState) {
           applyRoomRowToUI(data, false);
         }
-      }, 5000);
+      }, 1500);
     }
 
     function applyRoomRowToUI(row, forceLog = false) {
-      const sig = `${row.current_turn}|${row.dice_value}|${row.six_count}|${JSON.stringify(row.tokens)}|${row.status}|${row.turn_started_at || ''}`;
+      const sig = `${row.current_turn}|${row.dice_value}|${row.six_count}|${JSON.stringify(row.tokens)}|${row.status}|${row.updated_at || row.turn_started_at || ''}`;
       if (sig === lastStateSignature && !forceLog) {
         return;
       }
@@ -1110,6 +1110,7 @@
       diceValue = typeof row.dice_value === 'number' ? row.dice_value : 0;
       sixCount = typeof row.six_count === 'number' ? row.six_count : 0;
       turnStartedAtMs = row.turn_started_at ? new Date(row.turn_started_at).getTime() : Date.now();
+      botActionBusy = false;
 
       if (!waitingForTokenClick) {
         movableTokenIndices = [];
@@ -1145,7 +1146,7 @@
       drawBoard();
     }
 
-    function canCurrentClientDriveTurn() {
+    function canCurrentClientDriveTurn(elapsedSec = 0) {
       if (!ludoRunning || !activeRoomId) return false;
       const activeSeat = seatsState[currentTurn];
       if (!activeSeat) return false;
@@ -1155,9 +1156,17 @@
       }
 
       if (activeSeat.is_bot) {
-        const firstRealIdx = seatsState.findIndex(s => !s.is_bot && s.user_id);
-        const driverIdx = firstRealIdx >= 0 ? firstRealIdx : 0;
-        return driverIdx === mySeatIndex;
+        const realSeats = seatsState.filter(s => !s.is_bot);
+        const firstRealIdx = seatsState.findIndex(s => !s.is_bot);
+        const primaryDriver = firstRealIdx >= 0 ? firstRealIdx : 0;
+
+        if (primaryDriver === mySeatIndex) {
+          return true;
+        }
+        // Backup bot driver if primary real player is away/slow on a bot turn
+        if (realSeats.length > 1 && !seatsState[mySeatIndex]?.is_bot && elapsedSec >= 3) {
+          return true;
+        }
       }
 
       return false;
@@ -1182,7 +1191,7 @@
         if (waitingForTokenClick || isRollingLocally || isPushingState || botActionBusy) return;
 
         const activeSeat = seatsState[currentTurn];
-        const canDrive = canCurrentClientDriveTurn();
+        const canDrive = canCurrentClientDriveTurn(elapsedSec);
 
         if (activeSeat && activeSeat.is_bot && canDrive && elapsedSec >= 1) {
           botActionBusy = true;
@@ -1217,17 +1226,26 @@
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await db
+      let { data, error } = await db
         .from('match_rooms')
         .update(payload)
         .eq('room_id', activeRoomId)
         .select()
-        .single();
+        .maybeSingle();
+
+      if (error || !data) {
+        const fallback = await db
+          .from('match_rooms')
+          .select('*')
+          .eq('room_id', activeRoomId)
+          .maybeSingle();
+        if (fallback.data) data = fallback.data;
+      }
 
       isPushingState = false;
       botActionBusy = false;
 
-      if (!error && data) {
+      if (data) {
         applyRoomRowToUI(data, false);
       } else if (patch && Array.isArray(patch.tokens)) {
         tokens = patch.tokens.map(arr => [...arr]);
