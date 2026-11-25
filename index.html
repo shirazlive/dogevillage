@@ -517,6 +517,7 @@
     let turnClockInterval = null;
     let botActionBusy = false;
     let isRollingLocally = false;
+    let isPushingState = false;
     let lastStateSignature = "";
 
     function openAuthFromWelcome() {
@@ -1023,10 +1024,11 @@
       ludoRunning = true;
       botActionBusy = false;
       isRollingLocally = false;
+      isPushingState = false;
       waitingForTokenClick = false;
       movableTokenIndices = [];
       lastStateSignature = "";
-      document.getElementById('ludoLog').innerHTML = "Connected to shared room! Roll 6 or move highlighted tokens.";
+      document.getElementById('ludoLog').innerHTML = "Connected to shared room! Roll 6 or click highlighted tokens.";
       document.getElementById('ludoModal').style.display = 'flex';
 
       subscribeToRoom(roomId);
@@ -1056,8 +1058,7 @@
           },
           (payload) => {
             if (payload.new && ludoRunning) {
-              // Agar hum abhi khud dice roll ya token selection kar rahe hain to mid-action overwrite na karen
-              if (isRollingLocally || waitingForTokenClick) return;
+              if (isRollingLocally || waitingForTokenClick || isPushingState) return;
               applyRoomRowToUI(payload.new, false);
             }
           }
@@ -1070,13 +1071,13 @@
         clearInterval(roomSyncPollInterval);
       }
       roomSyncPollInterval = setInterval(async () => {
-        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally) return;
+        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally || isPushingState) return;
         const { data } = await db
           .from('match_rooms')
           .select('*')
           .eq('room_id', roomId)
           .maybeSingle();
-        if (data && ludoRunning && !waitingForTokenClick && !isRollingLocally) {
+        if (data && ludoRunning && !waitingForTokenClick && !isRollingLocally && !isPushingState) {
           applyRoomRowToUI(data, false);
         }
       }, 2500);
@@ -1128,7 +1129,7 @@
         lastStateSignature = sig;
         if ((forceLog || row.last_updated_by !== currentUser?.id) && diceValue >= 1 && diceValue <= 6) {
           const actorName = seatsState[currentTurn]?.username || SEAT_ICONS[currentTurn];
-          logLudo(`${SEAT_ICONS[currentTurn]} (${actorName}) rolled ${diceValue}.`);
+          logLudo(`${SEAT_ICONS[currentTurn]} (${actorName}) -> dice ${diceValue}.`);
         }
       }
 
@@ -1168,7 +1169,7 @@
       }
 
       turnClockInterval = setInterval(async () => {
-        if (!ludoRunning || !activeRoomId) return;
+        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally || isPushingState) return;
 
         const elapsedSec = Math.max(0, Math.floor((Date.now() - turnStartedAtMs) / 1000));
         const remaining = Math.max(0, 30 - elapsedSec);
@@ -1177,13 +1178,13 @@
         const activeSeat = seatsState[currentTurn];
         const canDrive = canCurrentClientDriveTurn();
 
-        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && !isRollingLocally && elapsedSec >= 1) {
+        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && elapsedSec >= 1) {
           botActionBusy = true;
           await executeTurnForSeat(currentTurn);
           return;
         }
 
-        if (activeSeat && !activeSeat.is_bot && canDrive && remaining <= 0 && !botActionBusy && !isRollingLocally && !waitingForTokenClick) {
+        if (activeSeat && !activeSeat.is_bot && canDrive && remaining <= 0 && !botActionBusy) {
           botActionBusy = true;
           sixCount = 0;
           const nextTurn = (currentTurn + 1) % 4;
@@ -1201,6 +1202,8 @@
 
     async function pushRoomState(patch) {
       if (!activeRoomId) return;
+      isPushingState = true;
+
       const payload = {
         ...patch,
         seats: seatsState,
@@ -1215,10 +1218,20 @@
         .select()
         .single();
 
+      isPushingState = false;
+      botActionBusy = false;
+
       if (!error && data) {
         applyRoomRowToUI(data, false);
-      } else {
-        botActionBusy = false;
+      } else if (patch && Array.isArray(patch.tokens)) {
+        // Fallback so local state still advances cleanly even if select() returns empty
+        tokens = patch.tokens.map(arr => [...arr]);
+        currentTurn = typeof patch.current_turn === 'number' ? patch.current_turn : currentTurn;
+        diceValue = typeof patch.dice_value === 'number' ? patch.dice_value : diceValue;
+        sixCount = typeof patch.six_count === 'number' ? patch.six_count : sixCount;
+        turnStartedAtMs = Date.now();
+        updateTurnUI();
+        drawBoard();
       }
     }
 
@@ -1226,6 +1239,7 @@
       ludoRunning = false;
       waitingForTokenClick = false;
       isRollingLocally = false;
+      isPushingState = false;
       movableTokenIndices = [];
       clearInterval(turnClockInterval);
       clearInterval(roomSyncPollInterval);
@@ -1263,7 +1277,7 @@
         document.getElementById('actionHint').innerText = `Waiting for ${activeSeat.username}...`;
       }
 
-      document.getElementById('rollDiceBtn').disabled = (!isMyTurn || waitingForTokenClick || isRollingLocally || !ludoRunning);
+      document.getElementById('rollDiceBtn').disabled = (!isMyTurn || waitingForTokenClick || isRollingLocally || isPushingState || !ludoRunning);
     }
 
     function getTokenCoords(pIdx, tIdx) {
@@ -1281,7 +1295,6 @@
     function getTokenDrawCenter(pIdx, tIdx) {
       const [col, row] = getTokenCoords(pIdx, tIdx);
       if (tokens[pIdx][tIdx] === -1) {
-        // Base yard coordinates already represent exact token centers in cell units (e.g. 1.5, 3.5)
         return { x: col * CELL, y: row * CELL };
       }
       const offsetX = (pIdx % 2 === 0 ? -3 : 3);
@@ -1370,10 +1383,10 @@
 
           if (isMovableMine) {
             ctx.beginPath();
-            ctx.arc(drawX, drawY, 15, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+            ctx.arc(drawX, drawY, 16, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
             ctx.fill();
-            ctx.lineWidth = 2.5;
+            ctx.lineWidth = 3;
             ctx.strokeStyle = "#f1c40f";
             ctx.stroke();
           }
@@ -1398,12 +1411,15 @@
 
     function computeNextStateAfterMove(pIdx, tIdx, roll, currentSixCount) {
       const nextTokens = tokens.map(arr => [...arr]);
-      if (nextTokens[pIdx][tIdx] === -1 && roll === 6) {
+      const prevStep = nextTokens[pIdx][tIdx];
+
+      if (prevStep === -1 && roll === 6) {
         nextTokens[pIdx][tIdx] = 0;
       } else {
-        nextTokens[pIdx][tIdx] += roll;
+        nextTokens[pIdx][tIdx] = prevStep + roll;
       }
 
+      let capturedAny = false;
       if (nextTokens[pIdx][tIdx] >= 0 && nextTokens[pIdx][tIdx] <= 50) {
         const myGlobal = (START_OFFSETS[pIdx] + nextTokens[pIdx][tIdx]) % 52;
         if (!SAFE_INDICES.includes(myGlobal)) {
@@ -1414,6 +1430,7 @@
                 const opGlobal = (START_OFFSETS[op] + nextTokens[op][ot]) % 52;
                 if (opGlobal === myGlobal) {
                   nextTokens[op][ot] = -1;
+                  capturedAny = true;
                 }
               }
             }
@@ -1433,7 +1450,10 @@
         six_count: nextSixCount,
         status: won ? 'finished' : 'playing',
         turn_started_at: new Date().toISOString(),
-        won
+        won,
+        movedFrom: prevStep,
+        movedTo: nextTokens[pIdx][tIdx],
+        capturedAny
       };
     }
 
@@ -1457,7 +1477,7 @@
     function handleHumanRoll() {
       const activeSeat = seatsState[currentTurn];
       const isMyTurn = activeSeat && !activeSeat.is_bot && currentTurn === mySeatIndex;
-      if (!isMyTurn || waitingForTokenClick || isRollingLocally || !ludoRunning) return;
+      if (!isMyTurn || waitingForTokenClick || isRollingLocally || isPushingState || !ludoRunning) return;
 
       isRollingLocally = true;
       updateTurnUI();
@@ -1466,11 +1486,10 @@
         diceValue = val;
         const nextSixStreak = (val === 6) ? (sixCount + 1) : 0;
 
-        // 3 consecutive 6s forfeit the roll and pass turn cleanly
         if (nextSixStreak >= 3) {
           isRollingLocally = false;
           sixCount = 0;
-          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled three 6s in a row! Turn passed.`);
+          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled 3 sixes in a row! Turn passed.`);
           await pushRoomState({
             tokens,
             current_turn: (mySeatIndex + 1) % 4,
@@ -1487,6 +1506,7 @@
 
         if (movable.length === 0) {
           sixCount = 0;
+          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled ${val} (no valid move).`);
           await pushRoomState({
             tokens,
             current_turn: (mySeatIndex + 1) % 4,
@@ -1496,10 +1516,10 @@
             turn_started_at: new Date().toISOString()
           });
         } else {
-          // Player can move even after 2nd or 6th roll
           sixCount = nextSixStreak;
           waitingForTokenClick = true;
           movableTokenIndices = movable;
+          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled ${val}! Click a highlighted token.`);
           updateTurnUI();
           drawBoard();
         }
@@ -1509,7 +1529,7 @@
     canvas.addEventListener('click', async (e) => {
       const activeSeat = seatsState[currentTurn];
       const isMyTurn = activeSeat && !activeSeat.is_bot && currentTurn === mySeatIndex;
-      if (!waitingForTokenClick || !isMyTurn || !ludoRunning) return;
+      if (!waitingForTokenClick || !isMyTurn || isPushingState || !ludoRunning) return;
 
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -1518,7 +1538,7 @@
       const clickY = (e.clientY - rect.top) * scaleY;
 
       let chosenToken = -1;
-      let bestDist = 28;
+      let bestDist = 42;
 
       for (const t of movableTokenIndices) {
         const { x: cx, y: cy } = getTokenDrawCenter(mySeatIndex, t);
@@ -1529,19 +1549,30 @@
         }
       }
 
-      if (chosenToken >= 0) {
-        const rollToUse = diceValue;
-        const sixStreakToUse = sixCount;
-        waitingForTokenClick = false;
-        movableTokenIndices = [];
-        updateTurnUI();
-        drawBoard();
+      // If user clicked outside highlighted tokens, keep waiting so turn isn't lost
+      if (chosenToken < 0) return;
 
-        const nextState = computeNextStateAfterMove(mySeatIndex, chosenToken, rollToUse, sixStreakToUse);
-        await pushRoomState(nextState);
-        if (nextState.won) {
-          alert(`🏆 Match Finished! Winner: ${seatsState[mySeatIndex]?.username || SEAT_ICONS[mySeatIndex]}`);
-        }
+      const rollToUse = diceValue;
+      const sixStreakToUse = sixCount;
+      waitingForTokenClick = false;
+      movableTokenIndices = [];
+      updateTurnUI();
+      drawBoard();
+
+      const nextState = computeNextStateAfterMove(mySeatIndex, chosenToken, rollToUse, sixStreakToUse);
+      if (nextState.movedFrom === -1 && nextState.movedTo === 0) {
+        logLudo(`${SEAT_ICONS[mySeatIndex]} brought Token #${chosenToken + 1} out of yard!`);
+      } else {
+        logLudo(`${SEAT_ICONS[mySeatIndex]} moved Token #${chosenToken + 1} (${rollToUse} steps).`);
+      }
+      if (nextState.capturedAny) {
+        logLudo(`⚔️ ${SEAT_ICONS[mySeatIndex]} captured an opponent token!`);
+      }
+
+      await pushRoomState(nextState);
+
+      if (nextState.won) {
+        alert(`🏆 Match Finished! Winner: ${seatsState[mySeatIndex]?.username || SEAT_ICONS[mySeatIndex]}`);
       }
     });
 
