@@ -303,7 +303,7 @@
       border: 3px solid #ccc;
     }
 
-    .dice-shake { animation: shake 0.35s infinite; }
+    .dice-shake { animation: shake 0.25s infinite; }
     @keyframes shake {
       0% { transform: rotate(0deg) scale(1.05); }
       25% { transform: rotate(12deg) scale(1.1); }
@@ -516,6 +516,7 @@
     let roomSyncPollInterval = null;
     let turnClockInterval = null;
     let botActionBusy = false;
+    let isRollingLocally = false;
     let lastStateSignature = "";
 
     function openAuthFromWelcome() {
@@ -850,7 +851,7 @@
     }
 
     // ==========================================
-    // SHARED REALTIME CLASSIC LUDO ENGINE
+    // SHARED REALTIME CLASSIC LUDO ENGINE (FIXED)
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
     const ctx = canvas.getContext('2d');
@@ -894,10 +895,11 @@
     const SEAT_ICONS = ["🔴 Red", "🟢 Green", "🟡 Yellow", "🔵 Blue"];
 
     let seatsState = [];
-    let mySeatIndex = -1;
+    let mySeatIndex = 0;
     let tokens = [[-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1]];
     let currentTurn = 0;
     let diceValue = 0;
+    let sixCount = 0;
     let turnStartedAtMs = Date.now();
     let waitingForTokenClick = false;
     let movableTokenIndices = [];
@@ -945,7 +947,7 @@
     }
 
     function resolveMySeatIndex(seatsArr) {
-      if (!currentUser || !Array.isArray(seatsArr)) return -1;
+      if (!currentUser || !Array.isArray(seatsArr)) return 0;
       const byId = seatsArr.findIndex(s => !s.is_bot && s.user_id && s.user_id === currentUser.id);
       if (byId >= 0) return byId;
 
@@ -953,7 +955,7 @@
       const byName = seatsArr.findIndex(s => !s.is_bot && s.username && s.username.toLowerCase() === myPrefix);
       if (byName >= 0) return byName;
 
-      return -1;
+      return 0;
     }
 
     async function initOrJoinSharedRoom(roomId, lobbyPlayers) {
@@ -983,6 +985,8 @@
             tokens: [[-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1]],
             current_turn: 0,
             dice_value: 0,
+            six_count: 0,
+            last_updated_by: currentUser?.id || 'system',
             status: 'playing',
             turn_started_at: nowIso,
             updated_at: nowIso
@@ -1004,7 +1008,11 @@
         if (changed) {
           const { data: updatedRoom } = await db
             .from('match_rooms')
-            .update({ seats: mergedSeats, updated_at: new Date().toISOString() })
+            .update({
+              seats: mergedSeats,
+              last_updated_by: currentUser?.id || 'system',
+              updated_at: new Date().toISOString()
+            })
             .eq('room_id', roomId)
             .select()
             .single();
@@ -1014,6 +1022,7 @@
 
       ludoRunning = true;
       botActionBusy = false;
+      isRollingLocally = false;
       waitingForTokenClick = false;
       movableTokenIndices = [];
       lastStateSignature = "";
@@ -1024,7 +1033,7 @@
       startRoomSyncFallback(roomId);
 
       if (roomRow) {
-        applyRoomRowToUI(roomRow);
+        applyRoomRowToUI(roomRow, true);
       }
       startSharedTurnClock();
     }
@@ -1047,7 +1056,9 @@
           },
           (payload) => {
             if (payload.new && ludoRunning) {
-              applyRoomRowToUI(payload.new);
+              // Agar hum abhi khud dice roll ya token selection kar rahe hain to mid-action overwrite na karen
+              if (isRollingLocally || waitingForTokenClick) return;
+              applyRoomRowToUI(payload.new, false);
             }
           }
         )
@@ -1059,27 +1070,24 @@
         clearInterval(roomSyncPollInterval);
       }
       roomSyncPollInterval = setInterval(async () => {
-        if (!ludoRunning || !activeRoomId || waitingForTokenClick) return;
+        if (!ludoRunning || !activeRoomId || waitingForTokenClick || isRollingLocally) return;
         const { data } = await db
           .from('match_rooms')
           .select('*')
           .eq('room_id', roomId)
           .maybeSingle();
-        if (data && ludoRunning && !waitingForTokenClick) {
-          applyRoomRowToUI(data);
+        if (data && ludoRunning && !waitingForTokenClick && !isRollingLocally) {
+          applyRoomRowToUI(data, false);
         }
-      }, 1500);
+      }, 2500);
     }
 
-    function applyRoomRowToUI(row) {
+    function applyRoomRowToUI(row, forceLog = false) {
       seatsState = Array.isArray(row.seats) && row.seats.length === 4
         ? row.seats
         : buildSeatsFromLobby([]);
 
-      const resolvedIdx = resolveMySeatIndex(seatsState);
-      if (resolvedIdx >= 0) {
-        mySeatIndex = resolvedIdx;
-      }
+      mySeatIndex = resolveMySeatIndex(seatsState);
 
       tokens = Array.isArray(row.tokens)
         ? row.tokens.map(arr => Array.isArray(arr) ? [...arr] : [-1, -1, -1, -1])
@@ -1087,6 +1095,7 @@
 
       currentTurn = typeof row.current_turn === 'number' ? row.current_turn : 0;
       diceValue = typeof row.dice_value === 'number' ? row.dice_value : 0;
+      sixCount = typeof row.six_count === 'number' ? row.six_count : 0;
       turnStartedAtMs = row.turn_started_at ? new Date(row.turn_started_at).getTime() : Date.now();
       botActionBusy = false;
 
@@ -1106,16 +1115,18 @@
       }
 
       const diceBox = document.getElementById('diceBox');
-      if (diceValue >= 1 && diceValue <= 6) {
-        diceBox.innerText = diceValue;
-      } else {
-        diceBox.innerText = "🎲";
+      if (!isRollingLocally) {
+        if (diceValue >= 1 && diceValue <= 6) {
+          diceBox.innerText = diceValue;
+        } else {
+          diceBox.innerText = "🎲";
+        }
       }
 
-      const sig = `${currentTurn}|${diceValue}|${JSON.stringify(tokens)}|${row.status}`;
+      const sig = `${currentTurn}|${diceValue}|${sixCount}|${JSON.stringify(tokens)}|${row.status}|${row.updated_at || ''}`;
       if (sig !== lastStateSignature) {
         lastStateSignature = sig;
-        if (diceValue >= 1 && diceValue <= 6) {
+        if ((forceLog || row.last_updated_by !== currentUser?.id) && diceValue >= 1 && diceValue <= 6) {
           const actorName = seatsState[currentTurn]?.username || SEAT_ICONS[currentTurn];
           logLudo(`${SEAT_ICONS[currentTurn]} (${actorName}) rolled ${diceValue}.`);
         }
@@ -1124,6 +1135,7 @@
       if (row.status === 'finished') {
         ludoRunning = false;
         waitingForTokenClick = false;
+        isRollingLocally = false;
         clearInterval(turnClockInterval);
         clearInterval(roomSyncPollInterval);
       }
@@ -1143,7 +1155,8 @@
 
       if (activeSeat.is_bot) {
         const firstRealIdx = seatsState.findIndex(s => !s.is_bot && s.user_id);
-        return firstRealIdx >= 0 && firstRealIdx === mySeatIndex;
+        const driverIdx = firstRealIdx >= 0 ? firstRealIdx : 0;
+        return driverIdx === mySeatIndex;
       }
 
       return false;
@@ -1164,19 +1177,21 @@
         const activeSeat = seatsState[currentTurn];
         const canDrive = canCurrentClientDriveTurn();
 
-        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && elapsedSec >= 1) {
+        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && !isRollingLocally && elapsedSec >= 1) {
           botActionBusy = true;
           await executeTurnForSeat(currentTurn);
           return;
         }
 
-        if (activeSeat && !activeSeat.is_bot && canDrive && remaining <= 0 && !botActionBusy && !waitingForTokenClick) {
+        if (activeSeat && !activeSeat.is_bot && canDrive && remaining <= 0 && !botActionBusy && !isRollingLocally && !waitingForTokenClick) {
           botActionBusy = true;
+          sixCount = 0;
           const nextTurn = (currentTurn + 1) % 4;
           await pushRoomState({
             tokens,
             current_turn: nextTurn,
             dice_value: 0,
+            six_count: 0,
             status: 'playing',
             turn_started_at: new Date().toISOString()
           });
@@ -1189,6 +1204,7 @@
       const payload = {
         ...patch,
         seats: seatsState,
+        last_updated_by: currentUser?.id || 'player',
         updated_at: new Date().toISOString()
       };
 
@@ -1200,7 +1216,7 @@
         .single();
 
       if (!error && data) {
-        applyRoomRowToUI(data);
+        applyRoomRowToUI(data, false);
       } else {
         botActionBusy = false;
       }
@@ -1209,6 +1225,7 @@
     async function closeLudoModal() {
       ludoRunning = false;
       waitingForTokenClick = false;
+      isRollingLocally = false;
       movableTokenIndices = [];
       clearInterval(turnClockInterval);
       clearInterval(roomSyncPollInterval);
@@ -1246,7 +1263,7 @@
         document.getElementById('actionHint').innerText = `Waiting for ${activeSeat.username}...`;
       }
 
-      document.getElementById('rollDiceBtn').disabled = (!isMyTurn || waitingForTokenClick || !ludoRunning);
+      document.getElementById('rollDiceBtn').disabled = (!isMyTurn || waitingForTokenClick || isRollingLocally || !ludoRunning);
     }
 
     function getTokenCoords(pIdx, tIdx) {
@@ -1263,11 +1280,16 @@
 
     function getTokenDrawCenter(pIdx, tIdx) {
       const [col, row] = getTokenCoords(pIdx, tIdx);
+      if (tokens[pIdx][tIdx] === -1) {
+        // Base yard coordinates already represent exact token centers in cell units (e.g. 1.5, 3.5)
+        return { x: col * CELL, y: row * CELL };
+      }
       const offsetX = (pIdx % 2 === 0 ? -3 : 3);
       const offsetY = (pIdx < 2 ? -3 : 3);
-      const x = (tokens[pIdx][tIdx] === -1 ? col * CELL : col * CELL + CELL / 2 + offsetX);
-      const y = (tokens[pIdx][tIdx] === -1 ? row * CELL : row * CELL + CELL / 2 + offsetY);
-      return { x, y };
+      return {
+        x: col * CELL + CELL / 2 + offsetX,
+        y: row * CELL + CELL / 2 + offsetY
+      };
     }
 
     function drawBase(startCol, startRow, color) {
@@ -1348,8 +1370,8 @@
 
           if (isMovableMine) {
             ctx.beginPath();
-            ctx.arc(drawX, drawY, 14, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.45)";
+            ctx.arc(drawX, drawY, 15, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
             ctx.fill();
             ctx.lineWidth = 2.5;
             ctx.strokeStyle = "#f1c40f";
@@ -1374,7 +1396,7 @@
       return true;
     }
 
-    function computeNextStateAfterMove(pIdx, tIdx, roll) {
+    function computeNextStateAfterMove(pIdx, tIdx, roll, currentSixCount) {
       const nextTokens = tokens.map(arr => [...arr]);
       if (nextTokens[pIdx][tIdx] === -1 && roll === 6) {
         nextTokens[pIdx][tIdx] = 0;
@@ -1400,13 +1422,15 @@
       }
 
       const won = nextTokens[pIdx].every(s => s === 56);
-      // Roll 6 grants bonus turn to the same player unless they just won
-      const nextTurn = won ? pIdx : (roll === 6 ? pIdx : (pIdx + 1) % 4);
+      const keepsTurnOnSix = (roll === 6 && currentSixCount < 3 && !won);
+      const nextTurn = won ? pIdx : (keepsTurnOnSix ? pIdx : (pIdx + 1) % 4);
+      const nextSixCount = keepsTurnOnSix ? currentSixCount : 0;
 
       return {
         tokens: nextTokens,
         current_turn: nextTurn,
         dice_value: roll,
+        six_count: nextSixCount,
         status: won ? 'finished' : 'playing',
         turn_started_at: new Date().toISOString(),
         won
@@ -1420,37 +1444,60 @@
       const spin = setInterval(() => {
         diceBox.innerText = Math.floor(Math.random() * 6) + 1;
         ticks++;
-        if (ticks >= 6) {
+        if (ticks >= 4) {
           clearInterval(spin);
           diceBox.classList.remove('dice-shake');
           const finalVal = Math.floor(Math.random() * 6) + 1;
           diceBox.innerText = finalVal;
           callback(finalVal);
         }
-      }, 60);
+      }, 45);
     }
 
     function handleHumanRoll() {
       const activeSeat = seatsState[currentTurn];
       const isMyTurn = activeSeat && !activeSeat.is_bot && currentTurn === mySeatIndex;
-      if (!isMyTurn || waitingForTokenClick || !ludoRunning) return;
+      if (!isMyTurn || waitingForTokenClick || isRollingLocally || !ludoRunning) return;
 
-      document.getElementById('rollDiceBtn').disabled = true;
+      isRollingLocally = true;
+      updateTurnUI();
 
       rollDiceAnimation(async (val) => {
         diceValue = val;
-        const movable = [0, 1, 2, 3].filter(t => canMoveToken(mySeatIndex, t, val));
+        const nextSixStreak = (val === 6) ? (sixCount + 1) : 0;
 
-        if (movable.length === 0) {
+        // 3 consecutive 6s forfeit the roll and pass turn cleanly
+        if (nextSixStreak >= 3) {
+          isRollingLocally = false;
+          sixCount = 0;
+          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled three 6s in a row! Turn passed.`);
           await pushRoomState({
             tokens,
             current_turn: (mySeatIndex + 1) % 4,
             dice_value: val,
+            six_count: 0,
+            status: 'playing',
+            turn_started_at: new Date().toISOString()
+          });
+          return;
+        }
+
+        const movable = [0, 1, 2, 3].filter(t => canMoveToken(mySeatIndex, t, val));
+        isRollingLocally = false;
+
+        if (movable.length === 0) {
+          sixCount = 0;
+          await pushRoomState({
+            tokens,
+            current_turn: (mySeatIndex + 1) % 4,
+            dice_value: val,
+            six_count: 0,
             status: 'playing',
             turn_started_at: new Date().toISOString()
           });
         } else {
-          // Always let user pick which token to move (including when only 1 token is movable or multiple on 6)
+          // Player can move even after 2nd or 6th roll
+          sixCount = nextSixStreak;
           waitingForTokenClick = true;
           movableTokenIndices = movable;
           updateTurnUI();
@@ -1471,7 +1518,7 @@
       const clickY = (e.clientY - rect.top) * scaleY;
 
       let chosenToken = -1;
-      let bestDist = 24;
+      let bestDist = 28;
 
       for (const t of movableTokenIndices) {
         const { x: cx, y: cy } = getTokenDrawCenter(mySeatIndex, t);
@@ -1483,9 +1530,14 @@
       }
 
       if (chosenToken >= 0) {
+        const rollToUse = diceValue;
+        const sixStreakToUse = sixCount;
         waitingForTokenClick = false;
         movableTokenIndices = [];
-        const nextState = computeNextStateAfterMove(mySeatIndex, chosenToken, diceValue);
+        updateTurnUI();
+        drawBoard();
+
+        const nextState = computeNextStateAfterMove(mySeatIndex, chosenToken, rollToUse, sixStreakToUse);
         await pushRoomState(nextState);
         if (nextState.won) {
           alert(`🏆 Match Finished! Winner: ${seatsState[mySeatIndex]?.username || SEAT_ICONS[mySeatIndex]}`);
@@ -1500,26 +1552,41 @@
       }
 
       const roll = Math.floor(Math.random() * 6) + 1;
+      const nextSixStreak = (roll === 6) ? (sixCount + 1) : 0;
+
+      if (nextSixStreak >= 3) {
+        sixCount = 0;
+        await pushRoomState({
+          tokens,
+          current_turn: (pIdx + 1) % 4,
+          dice_value: roll,
+          six_count: 0,
+          status: 'playing',
+          turn_started_at: new Date().toISOString()
+        });
+        return;
+      }
+
       const movable = [0, 1, 2, 3].filter(t => canMoveToken(pIdx, t, roll));
 
       if (movable.length > 0) {
         const chosen = movable[Math.floor(Math.random() * movable.length)];
-        const nextState = computeNextStateAfterMove(pIdx, chosen, roll);
+        const nextState = computeNextStateAfterMove(pIdx, chosen, roll, nextSixStreak);
         await pushRoomState(nextState);
         if (nextState.won) {
           alert(`🏆 Match Finished! Winner: ${seatsState[pIdx]?.username || SEAT_ICONS[pIdx]}`);
         }
       } else {
+        sixCount = 0;
         await pushRoomState({
           tokens,
           current_turn: (pIdx + 1) % 4,
           dice_value: roll,
+          six_count: 0,
           status: 'playing',
           turn_started_at: new Date().toISOString()
         });
       }
-
-      botActionBusy = false;
     }
   </script>
 </body>
