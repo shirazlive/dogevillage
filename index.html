@@ -852,7 +852,7 @@
     }
 
     // ==========================================
-    // SHARED REALTIME CLASSIC LUDO ENGINE (RELIABLE)
+    // SHARED REALTIME CLASSIC LUDO ENGINE (SMOOTH)
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
     const ctx = canvas.getContext('2d');
@@ -1178,8 +1178,8 @@
         const activeSeat = seatsState[currentTurn];
         const canDrive = canCurrentClientDriveTurn();
 
-        // Give bot turns a smooth, readable pace (~1.5s) so dice numbers and moves don't blur
-        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && elapsedSec >= 2) {
+        // Give bot turns ~1.2s so dice rolls and bonus 6s are easy to read
+        if (activeSeat && activeSeat.is_bot && canDrive && !botActionBusy && elapsedSec >= 1) {
           botActionBusy = true;
           await executeTurnForSeat(currentTurn);
           return;
@@ -1198,7 +1198,7 @@
             turn_started_at: new Date().toISOString()
           });
         }
-      }, 400);
+      }, 450);
     }
 
     async function pushRoomState(patch) {
@@ -1583,8 +1583,18 @@
       }
 
       const roll = Math.floor(Math.random() * 6) + 1;
-      document.getElementById('diceBox').innerText = roll;
       const nextSixStreak = (roll === 6) ? (sixCount + 1) : 0;
+      const movable = (nextSixStreak >= 3) ? [] : [0, 1, 2, 3].filter(t => canMoveToken(pIdx, t, roll));
+
+      // Show bot's dice roll first so a 6 is clearly visible before the move/next turn
+      document.getElementById('diceBox').innerText = roll;
+      logLudo(`${SEAT_ICONS[pIdx]} (${seatsState[pIdx]?.username || "Bot"}) rolled ${roll}.`);
+      await new Promise(resolve => setTimeout(resolve, 450));
+
+      if (!ludoRunning) {
+        botActionBusy = false;
+        return;
+      }
 
       if (nextSixStreak >= 3) {
         sixCount = 0;
@@ -1598,8 +1608,6 @@
         });
         return;
       }
-
-      const movable = [0, 1, 2, 3].filter(t => canMoveToken(pIdx, t, roll));
 
       if (movable.length > 0) {
         const chosen = movable[Math.floor(Math.random() * movable.length)];
