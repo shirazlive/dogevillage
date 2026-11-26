@@ -1009,6 +1009,7 @@
     async function startLudoMatch() {
       if (!currentUser) return openAuthFromWelcome();
 
+      await loadPlayerWallet();
       const currentBal = Number(playerData.playable_balance);
       if (currentBal < ENTRY_FEE_DOGE) {
         return alert(`⚠️ Minimum entry fee is ${ENTRY_FEE_DOGE.toFixed(8)} DOGE!`);
@@ -1019,16 +1020,22 @@
       botFillInProgress = false;
       skippedTimerWithBots = false;
 
+      const expectedAfterEntry = Number((currentBal - ENTRY_FEE_DOGE).toFixed(8));
       const { data: entryData, error: entryError } = await db.rpc('enter_ludo_match');
-      if (entryError || !entryData || !entryData.success) {
-        // Fallback client-side entry fee deduction if RPC expects old 1 DOGE fee
-        const nextBal = Math.max(0, Number((currentBal - ENTRY_FEE_DOGE).toFixed(8)));
-        await db.from('players').update({ playable_balance: nextBal }).eq('id', currentUser.id);
+
+      await loadPlayerWallet();
+      const syncedBal = Number(playerData.playable_balance);
+
+      if (entryError || !entryData || !entryData.success || syncedBal > expectedAfterEntry + 1e-12) {
+        await db
+          .from('players')
+          .update({ playable_balance: expectedAfterEntry })
+          .eq('id', currentUser.id);
+        await loadPlayerWallet();
       }
 
       playerStats.matches += 1;
       savePlayerStats();
-      await loadPlayerWallet();
 
       const { data: roomData, error: roomError } = await db.rpc('join_or_create_room');
       if (roomError || !roomData || !roomData.success) {
@@ -1956,7 +1963,10 @@
     async function creditWinnerBalance(prizeAmount, roomId) {
       if (!currentUser) return;
       const numericPrize = Number(prizeAmount);
-      const { error: rpcError } = await db.rpc('claim_ludo_win', {
+      const beforeWinBal = Number(playerData.playable_balance);
+      const expectedAfterWin = Number((beforeWinBal + numericPrize).toFixed(8));
+
+      await db.rpc('claim_ludo_win', {
         p_room_id: roomId,
         p_prize: numericPrize
       });
@@ -1967,11 +1977,10 @@
         .eq('id', currentUser.id)
         .single();
 
-      const baseBal = freshPlayer ? Number(freshPlayer.playable_balance) : Number(playerData.playable_balance);
-      const expectedAfterWin = Number((baseBal + numericPrize).toFixed(8));
+      const dbBal = freshPlayer ? Number(freshPlayer.playable_balance) : beforeWinBal;
 
-      // Ensure balance is credited even if RPC didn't modify balance
-      if (rpcError || !freshPlayer || Number(freshPlayer.playable_balance) <= Number(playerData.playable_balance)) {
+      // Credit the full win reward if the RPC did not already add it
+      if (dbBal < expectedAfterWin - 1e-12) {
         await db
           .from('players')
           .update({ playable_balance: expectedAfterWin })
@@ -2002,7 +2011,7 @@
         await creditWinnerBalance(rewardToCredit, finishedRoomId);
         await cleanupFinishedRoom(finishedRoomId);
         unmountAdBanner('gameplayAdSlot');
-        alert(`🏆 Victory! You won ${rewardToCredit.toFixed(8)} DOGE!`);
+        alert(`🏆 Victory! +${rewardToCredit.toFixed(8)} DOGE credited! Balance: ${Number(playerData.playable_balance).toFixed(8)} DOGE`);
       } else {
         playerStats.streak = 0;
         savePlayerStats();
