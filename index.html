@@ -577,9 +577,9 @@
       playTone(440, 0.07, 'triangle', 0.07, 0.06);
     }
 
-    function sfxMove(isSix = false) {
+    function sfxMove(isExtra = false) {
       playTone(520, 0.09, 'sine', 0.08, 0);
-      if (isSix) {
+      if (isExtra) {
         playTone(660, 0.1, 'triangle', 0.09, 0.08);
         playTone(880, 0.14, 'triangle', 0.09, 0.16);
       }
@@ -588,6 +588,7 @@
     function sfxCapture() {
       playTone(220, 0.12, 'sawtooth', 0.09, 0);
       playTone(150, 0.18, 'sawtooth', 0.09, 0.1);
+      playTone(660, 0.12, 'triangle', 0.09, 0.22);
     }
 
     function sfxWin() {
@@ -1073,9 +1074,9 @@
 
     function buildSeatsFromLobby(lobbyPlayers) {
       const fallbackBots = [
-        { user_id: null, username: "ShibaBot_01", is_bot: true },
-        { user_id: null, username: "DogeMiner_X", is_bot: true },
-        { user_id: null, username: "MoonPup_99", is_bot: true }
+        { user_id: null, username: "ShibaBot_01", is_bot: true, auto_bot: false },
+        { user_id: null, username: "DogeMiner_X", is_bot: true, auto_bot: false },
+        { user_id: null, username: "MoonPup_99", is_bot: true, auto_bot: false }
       ];
 
       const realPlayers = (lobbyPlayers || []).filter(p => !p.is_bot);
@@ -1089,7 +1090,8 @@
             seat: i,
             user_id: realPlayers[i].user_id,
             username: realPlayers[i].username,
-            is_bot: false
+            is_bot: false,
+            auto_bot: false
           });
         } else if (botPlayers[botCursor]) {
           const bp = botPlayers[botCursor++];
@@ -1097,7 +1099,8 @@
             seat: i,
             user_id: null,
             username: bp.username,
-            is_bot: true
+            is_bot: true,
+            auto_bot: false
           });
         } else {
           const fb = fallbackBots[Math.min(botCursor++, fallbackBots.length - 1)];
@@ -1105,7 +1108,8 @@
             seat: i,
             user_id: null,
             username: fb.username,
-            is_bot: true
+            is_bot: true,
+            auto_bot: false
           });
         }
       }
@@ -1114,14 +1118,48 @@
 
     function resolveMySeatIndex(seatsArr) {
       if (!currentUser || !Array.isArray(seatsArr)) return 0;
-      const byId = seatsArr.findIndex(s => !s.is_bot && s.user_id && s.user_id === currentUser.id);
+      const byId = seatsArr.findIndex(s => s && s.user_id && s.user_id === currentUser.id);
       if (byId >= 0) return byId;
 
       const myPrefix = (currentUser.email || "").split("@")[0].toLowerCase();
-      const byName = seatsArr.findIndex(s => !s.is_bot && s.username && s.username.toLowerCase() === myPrefix);
+      const byName = seatsArr.findIndex(s => s && s.username && s.username.toLowerCase() === myPrefix);
       if (byName >= 0) return byName;
 
       return 0;
+    }
+
+    // If a real player refreshes/disconnects and leaves their turn stuck, convert their seat into an Auto-Bot
+    async function promoteDisconnectedSeatToBotIfNeeded(elapsedSec) {
+      if (!ludoRunning || !activeRoomId || isPushingState || botActionBusy) return false;
+      const activeSeat = seatsState[currentTurn];
+      if (!activeSeat || activeSeat.is_bot) return false;
+
+      // Do not replace my own seat with a bot while I am actively playing
+      if (currentTurn === mySeatIndex) return false;
+
+      // After 8s of inactivity on another real player's turn, auto-bot takes over seamlessly
+      if (elapsedSec >= 8) {
+        const prevName = activeSeat.username || `Seat ${currentTurn + 1}`;
+        seatsState = seatsState.map((s, idx) => idx === currentTurn ? {
+          ...s,
+          is_bot: true,
+          auto_bot: true,
+          username: prevName.endsWith(" (AutoBot)") ? prevName : `${prevName} (AutoBot)`
+        } : s);
+
+        logLudo(`🤖 ${prevName} went inactive/disconnected -> Auto-Bot took over ${SEAT_ICONS[currentTurn]}!`);
+        botActionBusy = true;
+        await pushRoomState({
+          tokens,
+          current_turn: currentTurn,
+          dice_value: diceValue,
+          six_count: sixCount,
+          status: 'playing',
+          turn_started_at: new Date().toISOString()
+        });
+        return true;
+      }
+      return false;
     }
 
     async function initOrJoinSharedRoom(roomId, lobbyPlayers) {
@@ -1198,7 +1236,7 @@
       lastBannerText = "";
       lastHintText = "";
       lastTimerText = "";
-      document.getElementById('ludoLog').innerHTML = "Connected to shared room! Roll 6 or click highlighted tokens.";
+      document.getElementById('ludoLog').innerHTML = "Connected to shared room! 6, Capture, or Home gives extra turn.";
       document.getElementById('ludoModal').style.display = 'flex';
 
       subscribeToRoom(roomId);
@@ -1263,7 +1301,7 @@
     }
 
     function applyRoomRowToUI(row, forceLog = false) {
-      const sig = `${row.current_turn}|${row.dice_value}|${row.six_count}|${JSON.stringify(row.tokens)}|${row.status}|${row.updated_at || row.turn_started_at || ''}`;
+      const sig = `${row.current_turn}|${row.dice_value}|${row.six_count}|${JSON.stringify(row.tokens)}|${JSON.stringify(row.seats)}|${row.status}|${row.updated_at || row.turn_started_at || ''}`;
       if (sig === lastStateSignature && !forceLog) {
         return;
       }
@@ -1294,7 +1332,7 @@
         const legEl = document.getElementById(`leg${i}`);
         if (legEl && s) {
           const isMe = (!s.is_bot && i === mySeatIndex);
-          const botTag = s.is_bot ? " 🤖" : "";
+          const botTag = s.is_bot ? (s.auto_bot ? " 🤖Auto" : " 🤖") : "";
           const youTag = isMe ? " (YOU)" : "";
           const nextLabel = `${SEAT_ICONS[i]}: ${s.username}${youTag}${botTag}`;
           if (legEl.innerText !== nextLabel) legEl.innerText = nextLabel;
@@ -1361,6 +1399,10 @@
         }
 
         if (waitingForTokenClick || isRollingLocally || isPushingState || botActionBusy) return;
+
+        // If another real player refreshed/left and their turn is waiting, promote seat to Auto-Bot
+        const promoted = await promoteDisconnectedSeatToBotIfNeeded(elapsedSec);
+        if (promoted) return;
 
         const activeSeat = seatsState[currentTurn];
         const canDrive = canCurrentClientDriveTurn(elapsedSec);
@@ -1429,7 +1471,7 @@
         updated_at: nowIso
       };
 
-      lastStateSignature = `${dbPayload.current_turn}|${dbPayload.dice_value}|${dbPayload.six_count}|${JSON.stringify(dbPayload.tokens)}|${dbPayload.status}|${dbPayload.updated_at}`;
+      lastStateSignature = `${dbPayload.current_turn}|${dbPayload.dice_value}|${dbPayload.six_count}|${JSON.stringify(dbPayload.tokens)}|${JSON.stringify(dbPayload.seats)}|${dbPayload.status}|${dbPayload.updated_at}`;
 
       updateTurnUI();
       drawBoard();
@@ -1450,6 +1492,21 @@
     }
 
     async function closeLudoModal() {
+      // If I am a real player leaving mid-game, mark my own seat as auto-bot so others aren't blocked
+      if (ludoRunning && activeRoomId && seatsState[mySeatIndex] && !seatsState[mySeatIndex].is_bot) {
+        const myName = seatsState[mySeatIndex].username || `Seat ${mySeatIndex + 1}`;
+        seatsState = seatsState.map((s, idx) => idx === mySeatIndex ? {
+          ...s,
+          is_bot: true,
+          auto_bot: true,
+          username: myName.endsWith(" (AutoBot)") ? myName : `${myName} (AutoBot)`
+        } : s);
+        await db.from('match_rooms').update({
+          seats: seatsState,
+          updated_at: new Date().toISOString()
+        }).eq('room_id', activeRoomId);
+      }
+
       ludoRunning = false;
       waitingForTokenClick = false;
       isRollingLocally = false;
@@ -1491,8 +1548,9 @@
           ? "Click any highlighted token on the board!"
           : "Click ROLL DICE!";
       } else if (activeSeat.is_bot) {
-        bannerText = `${SEAT_ICONS[currentTurn]} ${activeSeat.username} (🤖 BOT)`;
-        hintText = `Bot ${activeSeat.username} is playing...`;
+        const botLabel = activeSeat.auto_bot ? "🤖 AUTO-BOT" : "🤖 BOT";
+        bannerText = `${SEAT_ICONS[currentTurn]} ${activeSeat.username} (${botLabel})`;
+        hintText = `${activeSeat.username} is playing...`;
       } else {
         bannerText = `${SEAT_ICONS[currentTurn]} ${activeSeat.username}'S TURN`;
         hintText = `Waiting for ${activeSeat.username}...`;
@@ -1528,7 +1586,6 @@
         return { x: col * CELL, y: row * CELL };
       }
 
-      // Group co-located tokens on the same cell so stacked tokens spread cleanly
       const sameCellPeers = [];
       for (let op = 0; op < 4; op++) {
         for (let ot = 0; ot < 4; ot++) {
@@ -1682,6 +1739,7 @@
       return true;
     }
 
+    // Extra turn on: 6 (up to 3-six limit), capturing an opponent token, or bringing a token Home (step 56)
     function computeNextStateAfterMove(pIdx, tIdx, roll, currentSixCount) {
       const nextTokens = tokens.map(arr => [...arr]);
       const prevStep = nextTokens[pIdx][tIdx];
@@ -1692,10 +1750,13 @@
         nextTokens[pIdx][tIdx] = prevStep + roll;
       }
 
+      const newStep = nextTokens[pIdx][tIdx];
+      const reachedHome = (prevStep < 56 && newStep === 56);
+
       let capturedAny = false;
       let landedSafeStar = false;
-      if (nextTokens[pIdx][tIdx] >= 0 && nextTokens[pIdx][tIdx] <= 50) {
-        const myGlobal = (START_OFFSETS[pIdx] + nextTokens[pIdx][tIdx]) % 52;
+      if (newStep >= 0 && newStep <= 50) {
+        const myGlobal = (START_OFFSETS[pIdx] + newStep) % 52;
         if (SAFE_INDICES.includes(myGlobal)) {
           landedSafeStar = true;
         } else {
@@ -1715,9 +1776,10 @@
       }
 
       const won = nextTokens[pIdx].every(s => s === 56);
-      const keepsTurnOnSix = (roll === 6 && currentSixCount < 3 && !won);
-      const nextTurn = won ? pIdx : (keepsTurnOnSix ? pIdx : (pIdx + 1) % 4);
-      const nextSixCount = keepsTurnOnSix ? currentSixCount : 0;
+      const earnedBonusTurn = (roll === 6 && currentSixCount < 3) || capturedAny || reachedHome;
+      const keepsTurn = earnedBonusTurn && !won;
+      const nextTurn = won ? pIdx : (keepsTurn ? pIdx : (pIdx + 1) % 4);
+      const nextSixCount = (roll === 6 && currentSixCount < 3 && !won) ? currentSixCount : 0;
 
       return {
         dbPatch: {
@@ -1731,9 +1793,11 @@
         meta: {
           won,
           movedFrom: prevStep,
-          movedTo: nextTokens[pIdx][tIdx],
+          movedTo: newStep,
           capturedAny,
-          landedSafeStar
+          reachedHome,
+          landedSafeStar,
+          earnedBonusTurn
         }
       };
     }
@@ -1879,7 +1943,7 @@
       if (meta.capturedAny) {
         sfxCapture();
       } else {
-        sfxMove(rollToUse === 6);
+        sfxMove(meta.earnedBonusTurn);
       }
 
       if (meta.movedFrom === -1 && meta.movedTo === 0) {
@@ -1891,7 +1955,10 @@
         logLudo(`⭐ ${SEAT_ICONS[mySeatIndex]} Token #${chosenToken + 1} is safe on a Star!`);
       }
       if (meta.capturedAny) {
-        logLudo(`⚔️ ${SEAT_ICONS[mySeatIndex]} captured an opponent token!`);
+        logLudo(`⚔️ ${SEAT_ICONS[mySeatIndex]} captured an opponent token -> Bonus Roll!`);
+      }
+      if (meta.reachedHome && !meta.won) {
+        logLudo(`🏠 ${SEAT_ICONS[mySeatIndex]} Token #${chosenToken + 1} reached Home -> Bonus Roll!`);
       }
 
       await pushRoomState(dbPatch);
@@ -1933,7 +2000,7 @@
         if (meta.capturedAny) {
           sfxCapture();
         } else {
-          sfxMove(roll === 6);
+          sfxMove(meta.earnedBonusTurn);
         }
         if (meta.movedFrom === -1 && meta.movedTo === 0) {
           logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled 6 & brought Token #${chosen + 1} out!`);
@@ -1944,7 +2011,10 @@
           logLudo(`⭐ ${SEAT_ICONS[pIdx]} (${actorName}) landed on a safe Star!`);
         }
         if (meta.capturedAny) {
-          logLudo(`⚔️ ${SEAT_ICONS[pIdx]} (${actorName}) captured a token!`);
+          logLudo(`⚔️ ${SEAT_ICONS[pIdx]} (${actorName}) captured a token -> Bonus Roll!`);
+        }
+        if (meta.reachedHome && !meta.won) {
+          logLudo(`🏠 ${SEAT_ICONS[pIdx]} (${actorName}) brought Token #${chosen + 1} Home -> Bonus Roll!`);
         }
         await pushRoomState(dbPatch);
         if (meta.won) {
