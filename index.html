@@ -855,7 +855,7 @@
     }
 
     // ==========================================
-    // SHARED REALTIME CLASSIC LUDO ENGINE (STABLE)
+    // SHARED REALTIME CLASSIC LUDO ENGINE (FIXED)
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
     const ctx = canvas.getContext('2d');
@@ -1042,6 +1042,15 @@
 
       if (roomRow) {
         applyRoomRowToUI(roomRow, true);
+      } else {
+        seatsState = desiredSeats;
+        tokens = [[-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1], [-1,-1,-1,-1]];
+        currentTurn = 0;
+        diceValue = 0;
+        sixCount = 0;
+        turnStartedAtMs = Date.now();
+        updateTurnUI();
+        drawBoard();
       }
       startSharedTurnClock();
     }
@@ -1086,7 +1095,7 @@
         if (data && ludoRunning && !waitingForTokenClick && !isRollingLocally && !isPushingState) {
           applyRoomRowToUI(data, false);
         }
-      }, 1500);
+      }, 2000);
     }
 
     function applyRoomRowToUI(row, forceLog = false) {
@@ -1163,7 +1172,6 @@
         if (primaryDriver === mySeatIndex) {
           return true;
         }
-        // Backup bot driver if primary real player is away/slow on a bot turn
         if (realSeats.length > 1 && !seatsState[mySeatIndex]?.is_bot && elapsedSec >= 3) {
           return true;
         }
@@ -1219,44 +1227,53 @@
       if (!activeRoomId) return;
       isPushingState = true;
 
-      const payload = {
-        ...patch,
+      // 1. Apply optimistically to local UI IMMEDIATELY so tokens always move smoothly
+      if (Array.isArray(patch.tokens)) {
+        tokens = patch.tokens.map(arr => [...arr]);
+      }
+      if (typeof patch.current_turn === 'number') currentTurn = patch.current_turn;
+      if (typeof patch.dice_value === 'number') diceValue = patch.dice_value;
+      if (typeof patch.six_count === 'number') sixCount = patch.six_count;
+      turnStartedAtMs = Date.now();
+
+      const diceBox = document.getElementById('diceBox');
+      if (diceBox) {
+        diceBox.innerText = (diceValue >= 1 && diceValue <= 6) ? String(diceValue) : "🎲";
+      }
+
+      const nowIso = new Date().toISOString();
+
+      // 2. Only send actual DB columns (never extra metadata keys like movedFrom/movedTo/won)
+      const dbPayload = {
+        tokens: tokens,
+        current_turn: currentTurn,
+        dice_value: diceValue,
+        six_count: sixCount,
+        status: patch.status || 'playing',
+        turn_started_at: patch.turn_started_at || nowIso,
         seats: seatsState,
         last_updated_by: currentUser?.id || 'player',
-        updated_at: new Date().toISOString()
+        updated_at: nowIso
       };
 
-      let { data, error } = await db
-        .from('match_rooms')
-        .update(payload)
-        .eq('room_id', activeRoomId)
-        .select()
-        .maybeSingle();
+      lastStateSignature = `${dbPayload.current_turn}|${dbPayload.dice_value}|${dbPayload.six_count}|${JSON.stringify(dbPayload.tokens)}|${dbPayload.status}|${dbPayload.updated_at}`;
 
-      if (error || !data) {
-        const fallback = await db
-          .from('match_rooms')
-          .select('*')
-          .eq('room_id', activeRoomId)
-          .maybeSingle();
-        if (fallback.data) data = fallback.data;
+      updateTurnUI();
+      drawBoard();
+
+      const { error } = await db
+        .from('match_rooms')
+        .update(dbPayload)
+        .eq('room_id', activeRoomId);
+
+      if (error) {
+        console.error("Supabase room sync warning:", error.message);
       }
 
       isPushingState = false;
       botActionBusy = false;
-
-      if (data) {
-        applyRoomRowToUI(data, false);
-      } else if (patch && Array.isArray(patch.tokens)) {
-        tokens = patch.tokens.map(arr => [...arr]);
-        currentTurn = typeof patch.current_turn === 'number' ? patch.current_turn : currentTurn;
-        diceValue = typeof patch.dice_value === 'number' ? patch.dice_value : diceValue;
-        sixCount = typeof patch.six_count === 'number' ? patch.six_count : sixCount;
-        turnStartedAtMs = Date.now();
-        document.getElementById('diceBox').innerText = (diceValue >= 1 && diceValue <= 6) ? diceValue : "🎲";
-        updateTurnUI();
-        drawBoard();
-      }
+      updateTurnUI();
+      drawBoard();
     }
 
     async function closeLudoModal() {
@@ -1484,16 +1501,20 @@
       const nextSixCount = keepsTurnOnSix ? currentSixCount : 0;
 
       return {
-        tokens: nextTokens,
-        current_turn: nextTurn,
-        dice_value: roll,
-        six_count: nextSixCount,
-        status: won ? 'finished' : 'playing',
-        turn_started_at: new Date().toISOString(),
-        won,
-        movedFrom: prevStep,
-        movedTo: nextTokens[pIdx][tIdx],
-        capturedAny
+        dbPatch: {
+          tokens: nextTokens,
+          current_turn: nextTurn,
+          dice_value: roll,
+          six_count: nextSixCount,
+          status: won ? 'finished' : 'playing',
+          turn_started_at: new Date().toISOString()
+        },
+        meta: {
+          won,
+          movedFrom: prevStep,
+          movedTo: nextTokens[pIdx][tIdx],
+          capturedAny
+        }
       };
     }
 
@@ -1566,6 +1587,25 @@
       });
     }
 
+    async function handleMatchWin(winnerSeatIdx) {
+      ludoRunning = false;
+      clearInterval(turnClockInterval);
+      clearInterval(roomSyncPollInterval);
+      const winnerSeat = seatsState[winnerSeatIdx];
+      const winnerName = winnerSeat?.username || SEAT_ICONS[winnerSeatIdx];
+
+      if (winnerSeatIdx === mySeatIndex && currentUser) {
+        const { error } = await db.rpc('claim_ludo_win', { p_room_id: activeRoomId, p_prize: 3.5 });
+        if (error) {
+          // Fallback credit if RPC name differs
+          const nextBal = Number(playerData.playable_balance) + 3.5;
+          await db.from('players').update({ playable_balance: nextBal }).eq('id', currentUser.id);
+        }
+        await loadPlayerWallet();
+      }
+      alert(`🏆 Match Finished! Winner: ${winnerName}`);
+    }
+
     canvas.addEventListener('click', async (e) => {
       const activeSeat = seatsState[currentTurn];
       const isMyTurn = activeSeat && !activeSeat.is_bot && currentTurn === mySeatIndex;
@@ -1595,23 +1635,22 @@
       const sixStreakToUse = sixCount;
       waitingForTokenClick = false;
       movableTokenIndices = [];
-      updateTurnUI();
-      drawBoard();
 
-      const nextState = computeNextStateAfterMove(mySeatIndex, chosenToken, rollToUse, sixStreakToUse);
-      if (nextState.movedFrom === -1 && nextState.movedTo === 0) {
+      const { dbPatch, meta } = computeNextStateAfterMove(mySeatIndex, chosenToken, rollToUse, sixStreakToUse);
+
+      if (meta.movedFrom === -1 && meta.movedTo === 0) {
         logLudo(`${SEAT_ICONS[mySeatIndex]} brought Token #${chosenToken + 1} out of yard!`);
       } else {
         logLudo(`${SEAT_ICONS[mySeatIndex]} moved Token #${chosenToken + 1} (${rollToUse} steps).`);
       }
-      if (nextState.capturedAny) {
+      if (meta.capturedAny) {
         logLudo(`⚔️ ${SEAT_ICONS[mySeatIndex]} captured an opponent token!`);
       }
 
-      await pushRoomState(nextState);
+      await pushRoomState(dbPatch);
 
-      if (nextState.won) {
-        alert(`🏆 Match Finished! Winner: ${seatsState[mySeatIndex]?.username || SEAT_ICONS[mySeatIndex]}`);
+      if (meta.won) {
+        await handleMatchWin(mySeatIndex);
       }
     });
 
@@ -1641,11 +1680,18 @@
 
       if (movable.length > 0) {
         const chosen = movable[Math.floor(Math.random() * movable.length)];
-        const nextState = computeNextStateAfterMove(pIdx, chosen, roll, nextSixStreak);
-        logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} & moved Token #${chosen + 1}.`);
-        await pushRoomState(nextState);
-        if (nextState.won) {
-          alert(`🏆 Match Finished! Winner: ${actorName}`);
+        const { dbPatch, meta } = computeNextStateAfterMove(pIdx, chosen, roll, nextSixStreak);
+        if (meta.movedFrom === -1 && meta.movedTo === 0) {
+          logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled 6 & brought Token #${chosen + 1} out!`);
+        } else {
+          logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} & moved Token #${chosen + 1}.`);
+        }
+        if (meta.capturedAny) {
+          logLudo(`⚔️ ${SEAT_ICONS[pIdx]} (${actorName}) captured a token!`);
+        }
+        await pushRoomState(dbPatch);
+        if (meta.won) {
+          await handleMatchWin(pIdx);
         }
       } else {
         logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} (no valid move).`);
