@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Doge Village - Doge Well Queue & Classic Ludo</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🐕</text></svg>">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
@@ -102,6 +103,19 @@
     .balance-val { font-size: 15px; font-weight: 800; color: #2ed573; text-shadow: 1px 1px 2px #000; }
     .debt-val { font-size: 13px; font-weight: 800; color: #ff4757; text-shadow: 1px 1px 2px #000; }
 
+    .streak-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(241, 196, 15, 0.14);
+      border: 1px solid rgba(241, 196, 15, 0.6);
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 10.5px;
+      margin-bottom: 7px;
+      color: #ffeaa7;
+    }
+
     .queue-box {
       background: rgba(212, 163, 115, 0.25);
       border-radius: 8px;
@@ -135,8 +149,10 @@
     .btn-loan { background: #8e44ad; box-shadow: 0 3px 0px #6c3483; }
     .btn-well { background: #d35400; box-shadow: 0 3px 0px #ba4a00; }
     .btn-ludo { background: #27ae60; box-shadow: 0 3px 0px #1e8449; font-size: 12px; }
+    .btn-bots-now { background: #16a085; box-shadow: 0 3px 0px #117864; }
     .btn-repay { background: #c0392b; box-shadow: 0 3px 0px #962d22; }
     .btn-withdraw { background: #2980b9; box-shadow: 0 3px 0px #1c5980; }
+    .btn-sound { background: #34495e; box-shadow: 0 3px 0px #2c3e50; font-size: 10.5px; padding: 5px 8px; }
     .btn-logout { background: #555; font-size: 10px; padding: 4px; margin-top: 2px; }
 
     .homepage-ad-box {
@@ -258,6 +274,13 @@
       text-align: center;
     }
 
+    .ludo-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 6px;
+    }
+
     .turn-banner {
       padding: 8px;
       border-radius: 8px;
@@ -317,7 +340,7 @@
       border: 1px solid #666;
       border-radius: 8px;
       padding: 8px;
-      height: 100px;
+      height: 105px;
       overflow-y: auto;
       font-size: 11px;
       text-align: left;
@@ -366,8 +389,11 @@
     </div>
 
     <div class="dashboard-panel">
-      <div style="font-size: 11px; color: #f1c40f; margin-bottom: 5px; font-weight: bold;">
-        👤 <span id="userEmail">Guest Visitor</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 5px;">
+        <div style="font-size: 11px; color: #f1c40f; font-weight: bold;">
+          👤 <span id="userEmail">Guest Visitor</span>
+        </div>
+        <button id="soundToggleBtn" class="btn btn-sound" style="width:auto;" onclick="toggleSound()">🔊 Sound ON</button>
       </div>
 
       <div class="stats-row">
@@ -379,6 +405,11 @@
           <div style="font-size: 9px; color: #ccc; text-transform: uppercase;">Loan Debt</div>
           <div class="debt-val"><span id="debt">...</span> DOGE</div>
         </div>
+      </div>
+
+      <div class="streak-bar">
+        <span>🏅 Wins: <b id="winsCount">0</b> / <span id="matchesCount">0</span></span>
+        <span>🔥 Streak: <b id="streakCount">0</b></span>
       </div>
 
       <div class="queue-box">
@@ -453,6 +484,7 @@
       <div id="lobbyPlayersList" style="font-size: 11px; color: #ccc; background: rgba(0,0,0,0.4); border: 1px solid #dda15e; border-radius: 8px; padding: 8px; margin-bottom: 10px; text-align: left;">
         Waiting for lobby data...
       </div>
+      <button id="startWithBotsNowBtn" class="btn btn-bots-now" style="margin-bottom: 6px;" onclick="startWithBotsNow()">🤖 Start Now With Bots</button>
       <button class="btn" style="background: #c0392b;" onclick="cancelLobbyMatchmaking()">Cancel Matchmaking</button>
     </div>
   </div>
@@ -462,7 +494,10 @@
       <canvas id="ludoCanvas" width="450" height="450"></canvas>
 
       <div class="ludo-controls">
-        <h3 style="color: #f1c40f; font-size: 15px;">🏆 Pot: 4.0 DOGE (Win 3.5)</h3>
+        <div class="ludo-top-bar">
+          <h3 style="color: #f1c40f; font-size: 14px;">🏆 Pot: 4.0 DOGE (Win 3.5)</h3>
+          <button id="modalSoundBtn" class="btn btn-sound" style="width:auto;" onclick="toggleSound()">🔊</button>
+        </div>
         <div id="turnBanner" class="turn-banner" style="background: #e74c3c;">WAITING...</div>
         <div id="timerBadge" class="timer-badge">⏳ Turn Time Left: 30s</div>
 
@@ -503,6 +538,109 @@
     const SMARTLINK_URL = 'https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab';
     document.getElementById('smartlinkAnchor').href = SMARTLINK_URL;
 
+    // ==========================================
+    // SOUND EFFECTS ENGINE (WEB AUDIO API)
+    // ==========================================
+    let soundEnabled = true;
+    let audioCtx = null;
+
+    function getAudioCtx() {
+      if (!audioCtx) {
+        const Ctx = window.AudioContext || window.webkitAudioContext;
+        if (Ctx) audioCtx = new Ctx();
+      }
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, duration = 0.12, type = 'sine', gainVal = 0.08, delay = 0) {
+      if (!soundEnabled) return;
+      const ctxAudio = getAudioCtx();
+      if (!ctxAudio) return;
+      const now = ctxAudio.currentTime + delay;
+      const osc = ctxAudio.createOscillator();
+      const gain = ctxAudio.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(gainVal, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+      osc.connect(gain);
+      gain.connect(ctxAudio.destination);
+      osc.start(now);
+      osc.stop(now + duration);
+    }
+
+    function sfxDice() {
+      playTone(320, 0.06, 'triangle', 0.07, 0);
+      playTone(440, 0.07, 'triangle', 0.07, 0.06);
+    }
+
+    function sfxMove(isSix = false) {
+      playTone(520, 0.09, 'sine', 0.08, 0);
+      if (isSix) {
+        playTone(660, 0.1, 'triangle', 0.09, 0.08);
+        playTone(880, 0.14, 'triangle', 0.09, 0.16);
+      }
+    }
+
+    function sfxCapture() {
+      playTone(220, 0.12, 'sawtooth', 0.09, 0);
+      playTone(150, 0.18, 'sawtooth', 0.09, 0.1);
+    }
+
+    function sfxWin() {
+      playTone(523.25, 0.12, 'triangle', 0.1, 0);
+      playTone(659.25, 0.12, 'triangle', 0.1, 0.12);
+      playTone(783.99, 0.14, 'triangle', 0.1, 0.24);
+      playTone(1046.5, 0.25, 'triangle', 0.12, 0.38);
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      const dashBtn = document.getElementById('soundToggleBtn');
+      const modalBtn = document.getElementById('modalSoundBtn');
+      if (dashBtn) dashBtn.innerText = soundEnabled ? "🔊 Sound ON" : "🔇 Muted";
+      if (modalBtn) modalBtn.innerText = soundEnabled ? "🔊" : "🔇";
+      if (soundEnabled) playTone(600, 0.08, 'sine', 0.07, 0);
+    }
+
+    // ==========================================
+    // PLAYER STATS & STREAK STORAGE
+    // ==========================================
+    let playerStats = { matches: 0, wins: 0, streak: 0 };
+
+    function loadPlayerStats() {
+      const key = currentUser ? `dv_stats_${currentUser.id}` : 'dv_stats_guest';
+      try {
+        const saved = JSON.parse(localStorage.getItem(key) || 'null');
+        if (saved && typeof saved.matches === 'number') {
+          playerStats = saved;
+        } else {
+          playerStats = { matches: 0, wins: 0, streak: 0 };
+        }
+      } catch (_) {
+        playerStats = { matches: 0, wins: 0, streak: 0 };
+      }
+      renderPlayerStats();
+    }
+
+    function savePlayerStats() {
+      const key = currentUser ? `dv_stats_${currentUser.id}` : 'dv_stats_guest';
+      localStorage.setItem(key, JSON.stringify(playerStats));
+      renderPlayerStats();
+    }
+
+    function renderPlayerStats() {
+      const wEl = document.getElementById('winsCount');
+      const mEl = document.getElementById('matchesCount');
+      const sEl = document.getElementById('streakCount');
+      if (wEl) wEl.innerText = playerStats.wins;
+      if (mEl) mEl.innerText = playerStats.matches;
+      if (sEl) sEl.innerText = playerStats.streak;
+    }
+
     let currentUser = null;
     let playerData = { playable_balance: 0, loan_debt: 0 };
     let poolCount = "...";
@@ -511,6 +649,7 @@
     let lobbyCountdownInterval = null;
     let lobbyPollInterval = null;
     let activeRoomId = null;
+    let botFillInProgress = false;
 
     let roomChannel = null;
     let roomSyncPollInterval = null;
@@ -522,6 +661,7 @@
     let lastBannerText = "";
     let lastHintText = "";
     let lastTimerText = "";
+    let winHandledForRoom = false;
 
     function openAuthFromWelcome() {
       document.getElementById('welcomeScreen').style.display = 'none';
@@ -552,6 +692,7 @@
         document.getElementById('authModal').style.display = 'none';
         document.getElementById('welcomeScreen').style.display = 'block';
       }
+      loadPlayerStats();
       await fetchWellPool();
       drawBoard();
     };
@@ -566,6 +707,7 @@
         currentUser = data.user;
         document.getElementById('authModal').style.display = 'none';
         document.getElementById('welcomeScreen').style.display = 'none';
+        loadPlayerStats();
         await loadPlayerWallet();
       }
     }
@@ -578,6 +720,7 @@
       currentUser = data.user;
       document.getElementById('authModal').style.display = 'none';
       document.getElementById('welcomeScreen').style.display = 'none';
+      loadPlayerStats();
       await loadPlayerWallet();
     }
 
@@ -738,6 +881,7 @@
 
     function cancelLobbyMatchmaking() {
       clearLobbyTimers();
+      botFillInProgress = false;
       activeRoomId = null;
       document.getElementById('lobbyModal').style.display = 'none';
       const playBtn = document.getElementById('playLudoBtn');
@@ -756,11 +900,46 @@
         .join("<br>");
     }
 
+    async function fillBotsAndEnterRoom() {
+      if (botFillInProgress || !activeRoomId) return;
+      botFillInProgress = true;
+      clearLobbyTimers();
+
+      const statusTextEl = document.getElementById('lobbyStatusText');
+      const countdownEl = document.getElementById('lobbyCountdown');
+      if (countdownEl) countdownEl.innerText = "0";
+      if (statusTextEl) statusTextEl.innerText = "Filling remaining seats with bots...";
+
+      const { data: botRes, error: botErr } = await db.rpc('fill_bots_and_start', {
+        p_room_id: activeRoomId
+      });
+
+      if (botErr || !botRes?.success) {
+        alert("Bot fill error: " + (botErr?.message || botRes?.message));
+        cancelLobbyMatchmaking();
+        return;
+      }
+
+      const { data: finalPlayers } = await db
+        .from('match_lobby')
+        .select('user_id, username, is_bot, status, joined_at')
+        .eq('room_id', activeRoomId)
+        .order('joined_at', { ascending: true });
+
+      botFillInProgress = false;
+      await initOrJoinSharedRoom(activeRoomId, finalPlayers || []);
+    }
+
+    async function startWithBotsNow() {
+      await fillBotsAndEnterRoom();
+    }
+
     async function startLudoMatch() {
       if (!currentUser) return openAuthFromWelcome();
 
       const playBtn = document.getElementById('playLudoBtn');
       if (playBtn) playBtn.disabled = true;
+      botFillInProgress = false;
 
       const { data: entryData, error: entryError } = await db.rpc('enter_ludo_match');
       if (entryError) {
@@ -772,6 +951,8 @@
         return alert("⚠️ " + entryData.message);
       }
 
+      playerStats.matches += 1;
+      savePlayerStats();
       await loadPlayerWallet();
 
       const { data: roomData, error: roomError } = await db.rpc('join_or_create_room');
@@ -800,7 +981,7 @@
       const statusTextEl = document.getElementById('lobbyStatusText');
 
       countdownEl.innerText = secondsLeft;
-      statusTextEl.innerText = `Real players joined: ${roomData.player_count}/4. Waiting up to 30s for more real players...`;
+      statusTextEl.innerText = `Real players joined: ${roomData.player_count}/4. Waiting up to 30s or click Start Now With Bots.`;
       renderLobbyPlayers(players);
       lobbyModal.style.display = 'flex';
 
@@ -809,31 +990,12 @@
         if (secondsLeft > 0) {
           countdownEl.innerText = secondsLeft;
         } else {
-          clearLobbyTimers();
-          countdownEl.innerText = "0";
-          statusTextEl.innerText = "30s finished! Filling remaining seats with bots...";
-
-          const { data: botRes, error: botErr } = await db.rpc('fill_bots_and_start', {
-            p_room_id: activeRoomId
-          });
-
-          if (botErr || !botRes?.success) {
-            alert("Bot fill error: " + (botErr?.message || botRes?.message));
-            cancelLobbyMatchmaking();
-            return;
-          }
-
-          const { data: finalPlayers } = await db
-            .from('match_lobby')
-            .select('user_id, username, is_bot, status, joined_at')
-            .eq('room_id', activeRoomId)
-            .order('joined_at', { ascending: true });
-
-          await initOrJoinSharedRoom(activeRoomId, finalPlayers || []);
+          await fillBotsAndEnterRoom();
         }
       }, 1000);
 
       lobbyPollInterval = setInterval(async () => {
+        if (botFillInProgress) return;
         const { data: polledPlayers, error: pollErr } = await db
           .from('match_lobby')
           .select('user_id, username, is_bot, status, joined_at')
@@ -855,7 +1017,7 @@
     }
 
     // ==========================================
-    // SHARED REALTIME CLASSIC LUDO ENGINE (FIXED)
+    // SHARED REALTIME CLASSIC LUDO ENGINE
     // ==========================================
     const canvas = document.getElementById('ludoCanvas');
     const ctx = canvas.getContext('2d');
@@ -964,6 +1126,7 @@
 
     async function initOrJoinSharedRoom(roomId, lobbyPlayers) {
       clearLobbyTimers();
+      botFillInProgress = false;
       document.getElementById('lobbyModal').style.display = 'none';
       const playBtn = document.getElementById('playLudoBtn');
       if (playBtn) playBtn.disabled = false;
@@ -1025,6 +1188,7 @@
       }
 
       ludoRunning = true;
+      winHandledForRoom = false;
       botActionBusy = false;
       isRollingLocally = false;
       isPushingState = false;
@@ -1211,6 +1375,7 @@
           botActionBusy = true;
           sixCount = 0;
           const nextTurn = (currentTurn + 1) % 4;
+          logLudo(`⏱️ ${SEAT_ICONS[currentTurn]} turn timed out -> auto-passing to ${SEAT_ICONS[nextTurn]}.`);
           await pushRoomState({
             tokens,
             current_turn: nextTurn,
@@ -1223,11 +1388,20 @@
       }, 600);
     }
 
+    async function cleanupFinishedRoom(roomId) {
+      if (!roomId) return;
+      try {
+        await db.from('match_lobby').delete().eq('room_id', roomId);
+        await db.from('match_rooms').delete().eq('room_id', roomId);
+      } catch (err) {
+        console.error("Room cleanup warning:", err);
+      }
+    }
+
     async function pushRoomState(patch) {
       if (!activeRoomId) return;
       isPushingState = true;
 
-      // 1. Apply optimistically to local UI IMMEDIATELY so tokens always move smoothly
       if (Array.isArray(patch.tokens)) {
         tokens = patch.tokens.map(arr => [...arr]);
       }
@@ -1243,7 +1417,6 @@
 
       const nowIso = new Date().toISOString();
 
-      // 2. Only send actual DB columns (never extra metadata keys like movedFrom/movedTo/won)
       const dbPayload = {
         tokens: tokens,
         current_turn: currentTurn,
@@ -1354,11 +1527,35 @@
       if (tokens[pIdx][tIdx] === -1) {
         return { x: col * CELL, y: row * CELL };
       }
-      const offsetX = (pIdx % 2 === 0 ? -3 : 3);
-      const offsetY = (pIdx < 2 ? -3 : 3);
+
+      // Group co-located tokens on the same cell so stacked tokens spread cleanly
+      const sameCellPeers = [];
+      for (let op = 0; op < 4; op++) {
+        for (let ot = 0; ot < 4; ot++) {
+          if (tokens[op][ot] === -1) continue;
+          const [oc, orow] = getTokenCoords(op, ot);
+          if (oc === col && orow === row) {
+            sameCellPeers.push({ op, ot });
+          }
+        }
+      }
+
+      const baseX = col * CELL + CELL / 2;
+      const baseY = row * CELL + CELL / 2;
+
+      if (sameCellPeers.length <= 1) {
+        return { x: baseX, y: baseY, stackCount: 1, isStackLeader: true };
+      }
+
+      const idxInStack = sameCellPeers.findIndex(item => item.op === pIdx && item.ot === tIdx);
+      const angles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
+      const angle = angles[idxInStack % angles.length];
+      const radius = 6;
       return {
-        x: col * CELL + CELL / 2 + offsetX,
-        y: row * CELL + CELL / 2 + offsetY
+        x: baseX + Math.cos(angle) * radius,
+        y: baseY + Math.sin(angle) * radius,
+        stackCount: sameCellPeers.length,
+        isStackLeader: idxInStack === 0
       };
     }
 
@@ -1435,13 +1632,14 @@
 
       for (let p = 0; p < 4; p++) {
         for (let t = 0; t < 4; t++) {
-          const { x: drawX, y: drawY } = getTokenDrawCenter(p, t);
+          const { x: drawX, y: drawY, stackCount, isStackLeader } = getTokenDrawCenter(p, t);
           const isMovableMine = waitingForTokenClick && p === mySeatIndex && movableTokenIndices.includes(t);
+          const radius = stackCount > 1 ? 8.5 : 10;
 
           if (isMovableMine) {
             ctx.beginPath();
-            ctx.arc(drawX, drawY, 16, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255, 255, 255, 0.55)";
+            ctx.arc(drawX, drawY, radius + 5, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
             ctx.fill();
             ctx.lineWidth = 3;
             ctx.strokeStyle = "#f1c40f";
@@ -1449,12 +1647,30 @@
           }
 
           ctx.beginPath();
-          ctx.arc(drawX, drawY, 10, 0, Math.PI * 2);
+          ctx.arc(drawX, drawY, radius, 0, Math.PI * 2);
           ctx.fillStyle = PLAYER_HEX[p];
           ctx.fill();
-          ctx.lineWidth = (p === mySeatIndex) ? 3 : 2;
+          ctx.lineWidth = (p === mySeatIndex) ? 2.5 : 1.8;
           ctx.strokeStyle = (p === mySeatIndex) ? "#fff" : "#111";
           ctx.stroke();
+
+          if (stackCount > 1 && isStackLeader) {
+            const [col, row] = getTokenCoords(p, t);
+            const badgeX = col * CELL + CELL - 6;
+            const badgeY = row * CELL + 6;
+            ctx.beginPath();
+            ctx.arc(badgeX, badgeY, 6.5, 0, Math.PI * 2);
+            ctx.fillStyle = "#111";
+            ctx.fill();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = "#f1c40f";
+            ctx.stroke();
+            ctx.fillStyle = "#fff";
+            ctx.font = "bold 8px Arial";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(String(stackCount), badgeX, badgeY + 0.5);
+          }
         }
       }
     }
@@ -1477,9 +1693,12 @@
       }
 
       let capturedAny = false;
+      let landedSafeStar = false;
       if (nextTokens[pIdx][tIdx] >= 0 && nextTokens[pIdx][tIdx] <= 50) {
         const myGlobal = (START_OFFSETS[pIdx] + nextTokens[pIdx][tIdx]) % 52;
-        if (!SAFE_INDICES.includes(myGlobal)) {
+        if (SAFE_INDICES.includes(myGlobal)) {
+          landedSafeStar = true;
+        } else {
           for (let op = 0; op < 4; op++) {
             if (op === pIdx) continue;
             for (let ot = 0; ot < 4; ot++) {
@@ -1513,12 +1732,14 @@
           won,
           movedFrom: prevStep,
           movedTo: nextTokens[pIdx][tIdx],
-          capturedAny
+          capturedAny,
+          landedSafeStar
         }
       };
     }
 
     function rollDiceAnimation(callback) {
+      sfxDice();
       const diceBox = document.getElementById('diceBox');
       diceBox.classList.add('dice-shake');
       let ticks = 0;
@@ -1550,10 +1771,11 @@
         if (nextSixStreak >= 3) {
           isRollingLocally = false;
           sixCount = 0;
-          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled 3 sixes in a row! Turn passed.`);
+          const passTurn = (mySeatIndex + 1) % 4;
+          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled 3 sixes in a row! Auto-passing to ${SEAT_ICONS[passTurn]}.`);
           await pushRoomState({
             tokens,
-            current_turn: (mySeatIndex + 1) % 4,
+            current_turn: passTurn,
             dice_value: val,
             six_count: 0,
             status: 'playing',
@@ -1567,10 +1789,11 @@
 
         if (movable.length === 0) {
           sixCount = 0;
-          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled ${val} (no valid move).`);
+          const passTurn = (mySeatIndex + 1) % 4;
+          logLudo(`${SEAT_ICONS[mySeatIndex]} rolled ${val} (no valid move -> auto-pass to ${SEAT_ICONS[passTurn]}).`);
           await pushRoomState({
             tokens,
-            current_turn: (mySeatIndex + 1) % 4,
+            current_turn: passTurn,
             dice_value: val,
             six_count: 0,
             status: 'playing',
@@ -1588,21 +1811,36 @@
     }
 
     async function handleMatchWin(winnerSeatIdx) {
+      if (winHandledForRoom) return;
+      winHandledForRoom = true;
       ludoRunning = false;
       clearInterval(turnClockInterval);
       clearInterval(roomSyncPollInterval);
+
+      const finishedRoomId = activeRoomId;
       const winnerSeat = seatsState[winnerSeatIdx];
       const winnerName = winnerSeat?.username || SEAT_ICONS[winnerSeatIdx];
 
-      if (winnerSeatIdx === mySeatIndex && currentUser) {
-        const { error } = await db.rpc('claim_ludo_win', { p_room_id: activeRoomId, p_prize: 3.5 });
-        if (error) {
-          // Fallback credit if RPC name differs
-          const nextBal = Number(playerData.playable_balance) + 3.5;
-          await db.from('players').update({ playable_balance: nextBal }).eq('id', currentUser.id);
+      if (winnerSeatIdx === mySeatIndex) {
+        sfxWin();
+        playerStats.wins += 1;
+        playerStats.streak += 1;
+        savePlayerStats();
+
+        if (currentUser) {
+          const { error } = await db.rpc('claim_ludo_win', { p_room_id: finishedRoomId, p_prize: 3.5 });
+          if (error) {
+            const nextBal = Number(playerData.playable_balance) + 3.5;
+            await db.from('players').update({ playable_balance: nextBal }).eq('id', currentUser.id);
+          }
+          await loadPlayerWallet();
         }
-        await loadPlayerWallet();
+      } else {
+        playerStats.streak = 0;
+        savePlayerStats();
       }
+
+      await cleanupFinishedRoom(finishedRoomId);
       alert(`🏆 Match Finished! Winner: ${winnerName}`);
     }
 
@@ -1638,10 +1876,19 @@
 
       const { dbPatch, meta } = computeNextStateAfterMove(mySeatIndex, chosenToken, rollToUse, sixStreakToUse);
 
+      if (meta.capturedAny) {
+        sfxCapture();
+      } else {
+        sfxMove(rollToUse === 6);
+      }
+
       if (meta.movedFrom === -1 && meta.movedTo === 0) {
         logLudo(`${SEAT_ICONS[mySeatIndex]} brought Token #${chosenToken + 1} out of yard!`);
       } else {
         logLudo(`${SEAT_ICONS[mySeatIndex]} moved Token #${chosenToken + 1} (${rollToUse} steps).`);
+      }
+      if (meta.landedSafeStar) {
+        logLudo(`⭐ ${SEAT_ICONS[mySeatIndex]} Token #${chosenToken + 1} is safe on a Star!`);
       }
       if (meta.capturedAny) {
         logLudo(`⚔️ ${SEAT_ICONS[mySeatIndex]} captured an opponent token!`);
@@ -1660,16 +1907,18 @@
         return;
       }
 
+      sfxDice();
       const roll = Math.floor(Math.random() * 6) + 1;
       const nextSixStreak = (roll === 6) ? (sixCount + 1) : 0;
       const movable = (nextSixStreak >= 3) ? [] : [0, 1, 2, 3].filter(t => canMoveToken(pIdx, t, roll));
       const actorName = seatsState[pIdx]?.username || "Bot";
+      const passTurn = (pIdx + 1) % 4;
 
       if (nextSixStreak >= 3) {
-        logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} (3 sixes -> pass).`);
+        logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} (3 sixes -> auto-pass).`);
         await pushRoomState({
           tokens,
-          current_turn: (pIdx + 1) % 4,
+          current_turn: passTurn,
           dice_value: roll,
           six_count: 0,
           status: 'playing',
@@ -1681,10 +1930,18 @@
       if (movable.length > 0) {
         const chosen = movable[Math.floor(Math.random() * movable.length)];
         const { dbPatch, meta } = computeNextStateAfterMove(pIdx, chosen, roll, nextSixStreak);
+        if (meta.capturedAny) {
+          sfxCapture();
+        } else {
+          sfxMove(roll === 6);
+        }
         if (meta.movedFrom === -1 && meta.movedTo === 0) {
           logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled 6 & brought Token #${chosen + 1} out!`);
         } else {
           logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} & moved Token #${chosen + 1}.`);
+        }
+        if (meta.landedSafeStar) {
+          logLudo(`⭐ ${SEAT_ICONS[pIdx]} (${actorName}) landed on a safe Star!`);
         }
         if (meta.capturedAny) {
           logLudo(`⚔️ ${SEAT_ICONS[pIdx]} (${actorName}) captured a token!`);
@@ -1694,10 +1951,10 @@
           await handleMatchWin(pIdx);
         }
       } else {
-        logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} (no valid move).`);
+        logLudo(`${SEAT_ICONS[pIdx]} (${actorName}) rolled ${roll} (no valid move -> auto-pass).`);
         await pushRoomState({
           tokens,
-          current_turn: (pIdx + 1) % 4,
+          current_turn: passTurn,
           dice_value: roll,
           six_count: 0,
           status: 'playing',
