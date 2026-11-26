@@ -100,7 +100,7 @@
       margin-bottom: 7px;
     }
 
-    .balance-val { font-size: 15px; font-weight: 800; color: #2ed573; text-shadow: 1px 1px 2px #000; }
+    .balance-val { font-size: 14px; font-weight: 800; color: #2ed573; text-shadow: 1px 1px 2px #000; }
     .debt-val { font-size: 13px; font-weight: 800; color: #ff4757; text-shadow: 1px 1px 2px #000; }
 
     .streak-bar {
@@ -148,9 +148,10 @@
     .btn-ad { background: #e67e22; box-shadow: 0 3px 0px #d35400; }
     .btn-loan { background: #8e44ad; box-shadow: 0 3px 0px #6c3483; }
     .btn-well { background: #d35400; box-shadow: 0 3px 0px #ba4a00; }
-    .btn-ludo { background: #27ae60; box-shadow: 0 3px 0px #1e8449; font-size: 12px; }
+    .btn-ludo { background: #27ae60; box-shadow: 0 3px 0px #1e8449; font-size: 11.5px; }
     .btn-bots-now { background: #16a085; box-shadow: 0 3px 0px #117864; }
     .btn-repay { background: #c0392b; box-shadow: 0 3px 0px #962d22; }
+    .btn-leave { background: #e74c3c; box-shadow: 0 3px 0px #a93226; font-size: 11px; padding: 6px 8px; }
     .btn-withdraw { background: #2980b9; box-shadow: 0 3px 0px #1c5980; }
     .btn-sound { background: #34495e; box-shadow: 0 3px 0px #2c3e50; font-size: 10.5px; padding: 5px 8px; }
     .btn-logout { background: #555; font-size: 10px; padding: 4px; margin-top: 2px; }
@@ -164,6 +165,21 @@
       text-align: center;
       width: 100%;
       height: 62px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-ad-banner {
+      margin-top: 6px;
+      background: rgba(20, 10, 5, 0.95);
+      border: 1px dashed #dda15e;
+      border-radius: 8px;
+      padding: 3px;
+      text-align: center;
+      width: 100%;
+      height: 58px;
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -214,7 +230,7 @@
       padding: 20px;
       border-radius: 16px;
       width: 95%;
-      max-width: 380px;
+      max-width: 400px;
       text-align: center;
       border: 2px solid #dda15e;
       color: #fff;
@@ -244,7 +260,7 @@
       border: 3px solid #dda15e;
       border-radius: 16px;
       padding: 14px;
-      max-width: 780px;
+      max-width: 790px;
       width: 98%;
       display: flex;
       flex-wrap: wrap;
@@ -266,11 +282,11 @@
 
     .ludo-controls {
       flex: 1;
-      min-width: 240px;
-      max-width: 290px;
+      min-width: 245px;
+      max-width: 300px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 7px;
       text-align: center;
     }
 
@@ -282,10 +298,10 @@
     }
 
     .turn-banner {
-      padding: 8px;
+      padding: 7px;
       border-radius: 8px;
       font-weight: 800;
-      font-size: 13px;
+      font-size: 12.5px;
       text-transform: uppercase;
       border: 2px solid #fff;
     }
@@ -306,18 +322,18 @@
       justify-content: center;
       gap: 14px;
       background: rgba(255,255,255,0.08);
-      padding: 10px;
+      padding: 8px;
       border-radius: 12px;
       border: 1px solid #dda15e;
     }
 
     .dice-face {
-      width: 56px;
-      height: 56px;
+      width: 52px;
+      height: 52px;
       background: #fff;
       color: #111;
       border-radius: 12px;
-      font-size: 32px;
+      font-size: 30px;
       font-weight: 900;
       display: flex;
       align-items: center;
@@ -339,12 +355,12 @@
       background: rgba(0,0,0,0.6);
       border: 1px solid #666;
       border-radius: 8px;
-      padding: 8px;
-      height: 105px;
+      padding: 7px;
+      height: 88px;
       overflow-y: auto;
       font-size: 11px;
       text-align: left;
-      line-height: 1.45;
+      line-height: 1.4;
     }
 
     .player-legend {
@@ -375,7 +391,7 @@
         </div>
         <div class="feature-box">
           <b>🎲 Classic Ludo</b>
-          1 DOGE entry matches for pot rewards.
+          0.00000100 DOGE entry matches.
         </div>
         <div class="feature-box">
           <b>📺 Ads & Loan</b>
@@ -421,17 +437,15 @@
         <button class="btn btn-well" onclick="joinWellPool()">🏊 Join Doge Well (1 DOGE)</button>
         <button class="btn btn-ad" onclick="watchAd()">📺 Watch Ad (+0.25 DOGE)</button>
         <button class="btn btn-loan" id="loanBtn" onclick="takeLoan()">🏦 Borrow 1 DOGE Loan</button>
-        <button class="btn btn-ludo" id="playLudoBtn" onclick="startLudoMatch()">🎲 Play Classic Ludo (1 DOGE)</button>
+        <button class="btn btn-ludo" id="playLudoBtn" onclick="startLudoMatch()">🎲 Play Classic Ludo (0.00000100 DOGE)</button>
         <button class="btn btn-repay" onclick="repayLoanManual()">💳 Repay Loan</button>
         <button class="btn btn-withdraw" onclick="openWithdrawModal()">💸 Withdraw to FaucetPay</button>
         <button class="btn btn-logout" onclick="logoutUser()">🚪 Logout</button>
       </div>
 
-      <div class="homepage-ad-box">
-        <div id="frame" style="width: 100%; height: 54px; margin: auto; position: relative; z-index: 99998;">
-          <iframe data-aa="2462584" src="//acceptable.a-ads.com/2462584/?size=Adaptive"
-            style="border:0; padding:0; width:100%; height:54px; overflow:hidden; display:block; margin:auto;"></iframe>
-        </div>
+      <div class="homepage-ad-box" id="homeAdBox">
+        <iframe data-aa="2462584" src="//acceptable.a-ads.com/2462584/?size=Adaptive"
+          style="border:0; padding:0; width:100%; height:54px; overflow:hidden; display:block; margin:auto;"></iframe>
       </div>
     </div>
 
@@ -478,14 +492,18 @@
       <p id="lobbyStatusText" style="font-size: 13px; color: #f5ebd6; margin: 8px 0;">
         Checking active players in lobby...
       </p>
-      <div style="font-size: 22px; font-weight: 900; color: #2ed573; margin: 10px 0;">
+      <div style="font-size: 22px; font-weight: 900; color: #2ed573; margin: 8px 0;">
         ⏱️ <span id="lobbyCountdown">30</span>s
+      </div>
+      <div style="font-size: 10.5px; color: #ffeaa7; margin-bottom: 8px;">
+        Full 30s wait = <b>0.00000350 DOGE</b> win | Skip with Bots = <b>0.00000200 DOGE</b> win
       </div>
       <div id="lobbyPlayersList" style="font-size: 11px; color: #ccc; background: rgba(0,0,0,0.4); border: 1px solid #dda15e; border-radius: 8px; padding: 8px; margin-bottom: 10px; text-align: left;">
         Waiting for lobby data...
       </div>
-      <button id="startWithBotsNowBtn" class="btn btn-bots-now" style="margin-bottom: 6px;" onclick="startWithBotsNow()">🤖 Start Now With Bots</button>
+      <button id="startWithBotsNowBtn" class="btn btn-bots-now" style="margin-bottom: 6px;" onclick="startWithBotsNow()">🤖 Start Now With Bots (0.00000200 Win)</button>
       <button class="btn" style="background: #c0392b;" onclick="cancelLobbyMatchmaking()">Cancel Matchmaking</button>
+      <div class="modal-ad-banner" id="lobbyAdSlot"></div>
     </div>
   </div>
 
@@ -495,7 +513,7 @@
 
       <div class="ludo-controls">
         <div class="ludo-top-bar">
-          <h3 style="color: #f1c40f; font-size: 14px;">🏆 Pot: 4.0 DOGE (Win 3.5)</h3>
+          <h3 id="potRewardTitle" style="color: #f1c40f; font-size: 12.5px;">🏆 Win: 0.00000350 DOGE</h3>
           <button id="modalSoundBtn" class="btn btn-sound" style="width:auto;" onclick="toggleSound()">🔊</button>
         </div>
         <div id="turnBanner" class="turn-banner" style="background: #e74c3c;">WAITING...</div>
@@ -510,12 +528,13 @@
 
         <div class="dice-container">
           <div id="diceBox" class="dice-face">🎲</div>
-          <button id="rollDiceBtn" class="btn btn-ludo" style="width: auto; padding: 12px 16px; font-size: 13px;" onclick="handleHumanRoll()">🎲 ROLL DICE</button>
+          <button id="rollDiceBtn" class="btn btn-ludo" style="width: auto; padding: 11px 14px; font-size: 12px;" onclick="handleHumanRoll()">🎲 ROLL DICE</button>
         </div>
 
         <div style="font-size: 11px; color: #f1c40f;" id="actionHint">Wait for your turn</div>
-        <div class="ludo-status-log" id="ludoLog">Match started! First to bring all 4 tokens Home wins 3.5 DOGE!</div>
-        <button class="btn btn-logout" onclick="closeLudoModal()">✖ Close Board</button>
+        <div class="ludo-status-log" id="ludoLog">Match started! Entry: 0.00000100 DOGE.</div>
+        <button class="btn btn-leave" onclick="leaveGameDuringMatch()">🚪 Leave Game (Auto-Bot)</button>
+        <div class="modal-ad-banner" id="gameplayAdSlot"></div>
       </div>
     </div>
   </div>
@@ -537,6 +556,38 @@
 
     const SMARTLINK_URL = 'https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab';
     document.getElementById('smartlinkAnchor').href = SMARTLINK_URL;
+
+    // ==========================================
+    // GAME ECONOMY CONSTANTS (DOGE SATOSHI)
+    // ==========================================
+    const ENTRY_FEE_DOGE = 0.00000100; // 100 doge satoshi
+    const FULL_WAIT_REWARD_DOGE = 0.00000350;
+    const SKIP_BOT_REWARD_DOGE = 0.00000200;
+
+    // ==========================================
+    // AD BANNER PLACEMENT ACROSS HOME / LOBBY / GAMEPLAY
+    // ==========================================
+    function createAdIframe() {
+      const iframe = document.createElement('iframe');
+      iframe.setAttribute('data-aa', '2462584');
+      iframe.src = '//acceptable.a-ads.com/2462584/?size=Adaptive';
+      iframe.style.cssText = 'border:0; padding:0; width:100%; height:50px; overflow:hidden; display:block; margin:auto;';
+      return iframe;
+    }
+
+    function mountAdBanner(targetId) {
+      const slot = document.getElementById(targetId);
+      if (!slot) return;
+      if (!slot.querySelector('iframe')) {
+        slot.innerHTML = '';
+        slot.appendChild(createAdIframe());
+      }
+    }
+
+    function unmountAdBanner(targetId) {
+      const slot = document.getElementById(targetId);
+      if (slot) slot.innerHTML = '';
+    }
 
     // ==========================================
     // SOUND EFFECTS ENGINE (WEB AUDIO API)
@@ -651,6 +702,7 @@
     let lobbyPollInterval = null;
     let activeRoomId = null;
     let botFillInProgress = false;
+    let skippedTimerWithBots = false;
 
     let roomChannel = null;
     let roomSyncPollInterval = null;
@@ -736,7 +788,7 @@
       const { data } = await db.from('players').select('*').eq('id', currentUser.id).single();
       if (data) {
         playerData = data;
-        document.getElementById('balance').innerText = Number(data.playable_balance).toFixed(4);
+        document.getElementById('balance').innerText = Number(data.playable_balance).toFixed(8);
         document.getElementById('debt').innerText = Number(data.loan_debt).toFixed(4);
       }
     }
@@ -866,6 +918,17 @@
       closeWithdrawModal();
     }
 
+    function getActiveWinRewardDoge() {
+      return skippedTimerWithBots ? SKIP_BOT_REWARD_DOGE : FULL_WAIT_REWARD_DOGE;
+    }
+
+    function updateRewardHeaderText() {
+      const titleEl = document.getElementById('potRewardTitle');
+      if (titleEl) {
+        titleEl.innerText = `🏆 Win: ${getActiveWinRewardDoge().toFixed(8)} DOGE`;
+      }
+    }
+
     // ==========================================
     // 30-SEC REAL-USER MATCHMAKING + BOT FALLBACK
     // ==========================================
@@ -884,6 +947,7 @@
       clearLobbyTimers();
       botFillInProgress = false;
       activeRoomId = null;
+      unmountAdBanner('lobbyAdSlot');
       document.getElementById('lobbyModal').style.display = 'none';
       const playBtn = document.getElementById('playLudoBtn');
       if (playBtn) playBtn.disabled = false;
@@ -901,15 +965,22 @@
         .join("<br>");
     }
 
-    async function fillBotsAndEnterRoom() {
+    async function fillBotsAndEnterRoom(isSkipAction = false) {
       if (botFillInProgress || !activeRoomId) return;
       botFillInProgress = true;
+      if (isSkipAction) {
+        skippedTimerWithBots = true;
+      }
       clearLobbyTimers();
 
       const statusTextEl = document.getElementById('lobbyStatusText');
       const countdownEl = document.getElementById('lobbyCountdown');
       if (countdownEl) countdownEl.innerText = "0";
-      if (statusTextEl) statusTextEl.innerText = "Filling remaining seats with bots...";
+      if (statusTextEl) {
+        statusTextEl.innerText = isSkipAction
+          ? "Skipping timer & filling seats with bots (Win reward: 0.00000200 DOGE)..."
+          : "30s finished! Filling seats with bots (Full win reward: 0.00000350 DOGE)...";
+      }
 
       const { data: botRes, error: botErr } = await db.rpc('fill_bots_and_start', {
         p_room_id: activeRoomId
@@ -932,24 +1003,27 @@
     }
 
     async function startWithBotsNow() {
-      await fillBotsAndEnterRoom();
+      await fillBotsAndEnterRoom(true);
     }
 
     async function startLudoMatch() {
       if (!currentUser) return openAuthFromWelcome();
 
+      const currentBal = Number(playerData.playable_balance);
+      if (currentBal < ENTRY_FEE_DOGE) {
+        return alert(`⚠️ Minimum entry fee is ${ENTRY_FEE_DOGE.toFixed(8)} DOGE!`);
+      }
+
       const playBtn = document.getElementById('playLudoBtn');
       if (playBtn) playBtn.disabled = true;
       botFillInProgress = false;
+      skippedTimerWithBots = false;
 
       const { data: entryData, error: entryError } = await db.rpc('enter_ludo_match');
-      if (entryError) {
-        if (playBtn) playBtn.disabled = false;
-        return alert(entryError.message);
-      }
-      if (!entryData.success) {
-        if (playBtn) playBtn.disabled = false;
-        return alert("⚠️ " + entryData.message);
+      if (entryError || !entryData || !entryData.success) {
+        // Fallback client-side entry fee deduction if RPC expects old 1 DOGE fee
+        const nextBal = Math.max(0, Number((currentBal - ENTRY_FEE_DOGE).toFixed(8)));
+        await db.from('players').update({ playable_balance: nextBal }).eq('id', currentUser.id);
       }
 
       playerStats.matches += 1;
@@ -982,8 +1056,9 @@
       const statusTextEl = document.getElementById('lobbyStatusText');
 
       countdownEl.innerText = secondsLeft;
-      statusTextEl.innerText = `Real players joined: ${roomData.player_count}/4. Waiting up to 30s or click Start Now With Bots.`;
+      statusTextEl.innerText = `Real players joined: ${roomData.player_count}/4. Waiting up to 30s for full 0.00000350 DOGE reward...`;
       renderLobbyPlayers(players);
+      mountAdBanner('lobbyAdSlot');
       lobbyModal.style.display = 'flex';
 
       lobbyCountdownInterval = setInterval(async () => {
@@ -991,7 +1066,7 @@
         if (secondsLeft > 0) {
           countdownEl.innerText = secondsLeft;
         } else {
-          await fillBotsAndEnterRoom();
+          await fillBotsAndEnterRoom(false);
         }
       }, 1000);
 
@@ -1118,26 +1193,22 @@
 
     function resolveMySeatIndex(seatsArr) {
       if (!currentUser || !Array.isArray(seatsArr)) return 0;
-      const byId = seatsArr.findIndex(s => s && s.user_id && s.user_id === currentUser.id);
+      const byId = seatsArr.findIndex(s => s && !s.is_bot && s.user_id && s.user_id === currentUser.id);
       if (byId >= 0) return byId;
 
       const myPrefix = (currentUser.email || "").split("@")[0].toLowerCase();
-      const byName = seatsArr.findIndex(s => s && s.username && s.username.toLowerCase() === myPrefix);
+      const byName = seatsArr.findIndex(s => s && !s.is_bot && s.username && s.username.toLowerCase() === myPrefix);
       if (byName >= 0) return byName;
 
       return 0;
     }
 
-    // If a real player refreshes/disconnects and leaves their turn stuck, convert their seat into an Auto-Bot
     async function promoteDisconnectedSeatToBotIfNeeded(elapsedSec) {
       if (!ludoRunning || !activeRoomId || isPushingState || botActionBusy) return false;
       const activeSeat = seatsState[currentTurn];
       if (!activeSeat || activeSeat.is_bot) return false;
-
-      // Do not replace my own seat with a bot while I am actively playing
       if (currentTurn === mySeatIndex) return false;
 
-      // After 8s of inactivity on another real player's turn, auto-bot takes over seamlessly
       if (elapsedSec >= 8) {
         const prevName = activeSeat.username || `Seat ${currentTurn + 1}`;
         seatsState = seatsState.map((s, idx) => idx === currentTurn ? {
@@ -1147,7 +1218,7 @@
           username: prevName.endsWith(" (AutoBot)") ? prevName : `${prevName} (AutoBot)`
         } : s);
 
-        logLudo(`🤖 ${prevName} went inactive/disconnected -> Auto-Bot took over ${SEAT_ICONS[currentTurn]}!`);
+        logLudo(`🤖 ${prevName} went inactive -> Auto-Bot took over ${SEAT_ICONS[currentTurn]}!`);
         botActionBusy = true;
         await pushRoomState({
           tokens,
@@ -1165,9 +1236,12 @@
     async function initOrJoinSharedRoom(roomId, lobbyPlayers) {
       clearLobbyTimers();
       botFillInProgress = false;
+      unmountAdBanner('lobbyAdSlot');
       document.getElementById('lobbyModal').style.display = 'none';
       const playBtn = document.getElementById('playLudoBtn');
       if (playBtn) playBtn.disabled = false;
+
+      updateRewardHeaderText();
 
       const desiredSeats = buildSeatsFromLobby(lobbyPlayers);
       mySeatIndex = resolveMySeatIndex(desiredSeats);
@@ -1236,7 +1310,8 @@
       lastBannerText = "";
       lastHintText = "";
       lastTimerText = "";
-      document.getElementById('ludoLog').innerHTML = "Connected to shared room! 6, Capture, or Home gives extra turn.";
+      document.getElementById('ludoLog').innerHTML = `Connected! Win reward: <b>${getActiveWinRewardDoge().toFixed(8)} DOGE</b>.`;
+      mountAdBanner('gameplayAdSlot');
       document.getElementById('ludoModal').style.display = 'flex';
 
       subscribeToRoom(roomId);
@@ -1400,7 +1475,6 @@
 
         if (waitingForTokenClick || isRollingLocally || isPushingState || botActionBusy) return;
 
-        // If another real player refreshed/left and their turn is waiting, promote seat to Auto-Bot
         const promoted = await promoteDisconnectedSeatToBotIfNeeded(elapsedSec);
         if (promoted) return;
 
@@ -1491,9 +1565,9 @@
       drawBoard();
     }
 
-    async function closeLudoModal() {
-      // If I am a real player leaving mid-game, mark my own seat as auto-bot so others aren't blocked
-      if (ludoRunning && activeRoomId && seatsState[mySeatIndex] && !seatsState[mySeatIndex].is_bot) {
+    async function leaveGameDuringMatch() {
+      const roomToLeave = activeRoomId;
+      if (roomToLeave && seatsState[mySeatIndex]) {
         const myName = seatsState[mySeatIndex].username || `Seat ${mySeatIndex + 1}`;
         seatsState = seatsState.map((s, idx) => idx === mySeatIndex ? {
           ...s,
@@ -1501,10 +1575,13 @@
           auto_bot: true,
           username: myName.endsWith(" (AutoBot)") ? myName : `${myName} (AutoBot)`
         } : s);
+
+        const wasMyTurn = (currentTurn === mySeatIndex);
         await db.from('match_rooms').update({
           seats: seatsState,
+          turn_started_at: wasMyTurn ? new Date().toISOString() : undefined,
           updated_at: new Date().toISOString()
-        }).eq('room_id', activeRoomId);
+        }).eq('room_id', roomToLeave);
       }
 
       ludoRunning = false;
@@ -1513,6 +1590,7 @@
       isPushingState = false;
       botActionBusy = false;
       movableTokenIndices = [];
+      activeRoomId = null;
       clearInterval(turnClockInterval);
       clearInterval(roomSyncPollInterval);
       clearLobbyTimers();
@@ -1520,7 +1598,9 @@
         await db.removeChannel(roomChannel);
         roomChannel = null;
       }
+      unmountAdBanner('gameplayAdSlot');
       document.getElementById('ludoModal').style.display = 'none';
+      alert("🚪 You left the match. An Auto-Bot has taken your seat.");
     }
 
     function logLudo(msg) {
@@ -1739,7 +1819,6 @@
       return true;
     }
 
-    // Extra turn on: 6 (up to 3-six limit), capturing an opponent token, or bringing a token Home (step 56)
     function computeNextStateAfterMove(pIdx, tIdx, roll, currentSixCount) {
       const nextTokens = tokens.map(arr => [...arr]);
       const prevStep = nextTokens[pIdx][tIdx];
@@ -1874,6 +1953,34 @@
       });
     }
 
+    async function creditWinnerBalance(prizeAmount, roomId) {
+      if (!currentUser) return;
+      const numericPrize = Number(prizeAmount);
+      const { error: rpcError } = await db.rpc('claim_ludo_win', {
+        p_room_id: roomId,
+        p_prize: numericPrize
+      });
+
+      const { data: freshPlayer } = await db
+        .from('players')
+        .select('playable_balance')
+        .eq('id', currentUser.id)
+        .single();
+
+      const baseBal = freshPlayer ? Number(freshPlayer.playable_balance) : Number(playerData.playable_balance);
+      const expectedAfterWin = Number((baseBal + numericPrize).toFixed(8));
+
+      // Ensure balance is credited even if RPC didn't modify balance
+      if (rpcError || !freshPlayer || Number(freshPlayer.playable_balance) <= Number(playerData.playable_balance)) {
+        await db
+          .from('players')
+          .update({ playable_balance: expectedAfterWin })
+          .eq('id', currentUser.id);
+      }
+
+      await loadPlayerWallet();
+    }
+
     async function handleMatchWin(winnerSeatIdx) {
       if (winHandledForRoom) return;
       winHandledForRoom = true;
@@ -1884,6 +1991,7 @@
       const finishedRoomId = activeRoomId;
       const winnerSeat = seatsState[winnerSeatIdx];
       const winnerName = winnerSeat?.username || SEAT_ICONS[winnerSeatIdx];
+      const rewardToCredit = getActiveWinRewardDoge();
 
       if (winnerSeatIdx === mySeatIndex) {
         sfxWin();
@@ -1891,21 +1999,17 @@
         playerStats.streak += 1;
         savePlayerStats();
 
-        if (currentUser) {
-          const { error } = await db.rpc('claim_ludo_win', { p_room_id: finishedRoomId, p_prize: 3.5 });
-          if (error) {
-            const nextBal = Number(playerData.playable_balance) + 3.5;
-            await db.from('players').update({ playable_balance: nextBal }).eq('id', currentUser.id);
-          }
-          await loadPlayerWallet();
-        }
+        await creditWinnerBalance(rewardToCredit, finishedRoomId);
+        await cleanupFinishedRoom(finishedRoomId);
+        unmountAdBanner('gameplayAdSlot');
+        alert(`🏆 Victory! You won ${rewardToCredit.toFixed(8)} DOGE!`);
       } else {
         playerStats.streak = 0;
         savePlayerStats();
+        await cleanupFinishedRoom(finishedRoomId);
+        unmountAdBanner('gameplayAdSlot');
+        alert(`🏆 Match Finished! Winner: ${winnerName}`);
       }
-
-      await cleanupFinishedRoom(finishedRoomId);
-      alert(`🏆 Match Finished! Winner: ${winnerName}`);
     }
 
     canvas.addEventListener('click', async (e) => {
