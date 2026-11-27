@@ -560,13 +560,10 @@
     // ==========================================
     // GAME ECONOMY CONSTANTS (DOGE SATOSHI)
     // ==========================================
-    const ENTRY_FEE_DOGE = 0.00000100; // 100 doge satoshi
+    const ENTRY_FEE_DOGE = 0.00000100;
     const FULL_WAIT_REWARD_DOGE = 0.00000350;
     const SKIP_BOT_REWARD_DOGE = 0.00000200;
 
-    // ==========================================
-    // AD BANNER PLACEMENT ACROSS HOME / LOBBY / GAMEPLAY
-    // ==========================================
     function createAdIframe() {
       const iframe = document.createElement('iframe');
       iframe.setAttribute('data-aa', '2462584');
@@ -890,12 +887,12 @@
         return alert(`⚠️ Insufficient balance! You need at least ${repayAmount.toFixed(4)} DOGE playable balance to repay this loan portion.`);
       }
 
-      playerData.playable_balance = balance - repayAmount;
-      playerData.loan_debt = debt - repayAmount;
+      const nextBalance = Number((balance - repayAmount).toFixed(8));
+      const nextDebt = Number((debt - repayAmount).toFixed(8));
 
       const { error } = await db.from('players').update({
-        playable_balance: playerData.playable_balance,
-        loan_debt: playerData.loan_debt
+        playable_balance: nextBalance,
+        loan_debt: nextDebt
       }).eq('id', currentUser.id);
 
       if (error) return alert("Error updating database: " + error.message);
@@ -1020,23 +1017,6 @@
       botFillInProgress = false;
       skippedTimerWithBots = false;
 
-      const expectedAfterEntry = Number((currentBal - ENTRY_FEE_DOGE).toFixed(8));
-      const { data: entryData, error: entryError } = await db.rpc('enter_ludo_match');
-
-      await loadPlayerWallet();
-      const syncedBal = Number(playerData.playable_balance);
-
-      if (entryError || !entryData || !entryData.success || syncedBal > expectedAfterEntry + 1e-12) {
-        await db
-          .from('players')
-          .update({ playable_balance: expectedAfterEntry })
-          .eq('id', currentUser.id);
-        await loadPlayerWallet();
-      }
-
-      playerStats.matches += 1;
-      savePlayerStats();
-
       const { data: roomData, error: roomError } = await db.rpc('join_or_create_room');
       if (roomError || !roomData || !roomData.success) {
         if (playBtn) playBtn.disabled = false;
@@ -1044,6 +1024,23 @@
       }
 
       activeRoomId = roomData.room_id;
+
+      // Deduct entry fee via SQL RPC pay_ludo_entry
+      const { data: entryData, error: entryError } = await db.rpc('pay_ludo_entry', {
+        p_room_id: activeRoomId,
+        p_entry_fee: ENTRY_FEE_DOGE
+      });
+
+      if (entryError || !entryData?.success) {
+        if (playBtn) playBtn.disabled = false;
+        return alert("Entry Fee Error: " + (entryError?.message || entryData?.message || "Could not deduct entry fee"));
+      }
+
+      await loadPlayerWallet();
+
+      playerStats.matches += 1;
+      savePlayerStats();
+
       let secondsLeft = typeof roomData.seconds_left === 'number' ? roomData.seconds_left : 30;
 
       let { data: players } = await db
@@ -1963,28 +1960,14 @@
     async function creditWinnerBalance(prizeAmount, roomId) {
       if (!currentUser) return;
       const numericPrize = Number(prizeAmount);
-      const beforeWinBal = Number(playerData.playable_balance);
-      const expectedAfterWin = Number((beforeWinBal + numericPrize).toFixed(8));
 
-      await db.rpc('claim_ludo_win', {
+      const { data, error } = await db.rpc('claim_ludo_win', {
         p_room_id: roomId,
-        p_prize: numericPrize
+        p_reward: numericPrize
       });
 
-      const { data: freshPlayer } = await db
-        .from('players')
-        .select('playable_balance')
-        .eq('id', currentUser.id)
-        .single();
-
-      const dbBal = freshPlayer ? Number(freshPlayer.playable_balance) : beforeWinBal;
-
-      // Credit the full win reward if the RPC did not already add it
-      if (dbBal < expectedAfterWin - 1e-12) {
-        await db
-          .from('players')
-          .update({ playable_balance: expectedAfterWin })
-          .eq('id', currentUser.id);
+      if (error || !data?.success) {
+        console.error("Win RPC error:", error?.message || data?.message);
       }
 
       await loadPlayerWallet();
