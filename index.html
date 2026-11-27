@@ -146,6 +146,7 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .btn-ad { background: #e67e22; box-shadow: 0 3px 0px #d35400; }
+    .btn-faucet { background: #f39c12; color: #111; text-shadow: none; box-shadow: 0 3px 0px #b9770e; }
     .btn-loan { background: #8e44ad; box-shadow: 0 3px 0px #6c3483; }
     .btn-well { background: #d35400; box-shadow: 0 3px 0px #ba4a00; }
     .btn-ludo { background: #27ae60; box-shadow: 0 3px 0px #1e8449; font-size: 11.5px; }
@@ -240,6 +241,27 @@
       width: 100%; padding: 10px; margin: 8px 0;
       border: 2px solid #dda15e; border-radius: 8px;
       font-size: 13px; background: #fff; color: #000;
+    }
+
+    .human-check-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid #dda15e;
+      border-radius: 10px;
+      padding: 10px;
+      margin: 10px 0;
+      font-size: 12px;
+      color: #ffeaa7;
+    }
+
+    .human-check-box input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      cursor: pointer;
     }
 
     .smartlink-open-btn {
@@ -381,7 +403,7 @@
       <h1>🐕 Welcome to Doge Village!</h1>
       <p>
         Join the <b>Doge Well 10x FIFO Pool</b>, play <b>Classic Ludo</b>,
-        and earn DOGE rewards via sponsor ads or 1 DOGE loans.
+        and earn DOGE rewards via sponsor ads, mini faucet, or 1 DOGE loans.
       </p>
 
       <div class="welcome-features">
@@ -394,8 +416,8 @@
           0.00000100 DOGE entry matches.
         </div>
         <div class="feature-box">
-          <b>📺 Ads & Loan</b>
-          Ad rewards or 1 DOGE loan under 1 balance.
+          <b>🪙 Faucet & Ads</b>
+          0.00000100 DOGE faucet + ad rewards.
         </div>
       </div>
 
@@ -435,6 +457,7 @@
 
       <div class="btn-grid">
         <button class="btn btn-well" onclick="joinWellPool()">🏊 Join Doge Well (1 DOGE)</button>
+        <button class="btn btn-faucet" id="faucetClaimBtn" onclick="openFaucetModal()">🪙 Claim Faucet (+0.00000100 DOGE)</button>
         <button class="btn btn-ad" onclick="watchAd()">📺 Watch Ad (+0.25 DOGE)</button>
         <button class="btn btn-loan" id="loanBtn" onclick="takeLoan()">🏦 Borrow 1 DOGE Loan</button>
         <button class="btn btn-ludo" id="playLudoBtn" onclick="startLudoMatch()">🎲 Play Classic Ludo (0.00000100 DOGE)</button>
@@ -456,12 +479,41 @@
   <div id="authModal" class="modal">
     <div class="modal-content">
       <h3 style="color: #f39c12; margin-bottom: 6px;">🐕 Doge Village Login</h3>
-      <p style="font-size: 11px; color: #ccc; margin-bottom: 10px;">Earn via Ads or take 1 DOGE Loan when balance &lt; 1.</p>
+      <p style="font-size: 11px; color: #ccc; margin-bottom: 10px;">Earn via Faucet & Ads or take 1 DOGE Loan when balance &lt; 1.</p>
       <input type="email" id="authEmail" placeholder="Enter your email">
       <input type="password" id="authPassword" placeholder="Enter password (min 6 chars)">
       <button class="btn btn-ludo" style="margin-top: 6px;" onclick="loginUser()">Login</button>
       <button class="btn btn-ad" style="margin-top: 6px;" onclick="signupUser()">Create New Account</button>
       <button class="btn btn-logout" style="margin-top: 8px;" onclick="backToWelcome()">← Back to Welcome Note</button>
+    </div>
+  </div>
+
+  <div id="faucetModal" class="modal">
+    <div class="modal-content" style="max-width: 380px;">
+      <h3 style="color: #f1c40f; margin-bottom: 6px;">🪙 Instant Faucet Claim</h3>
+      <p style="font-size: 12px; color: #f5ebd6;">
+        Complete human check &amp; short ad to claim <b style="color: #2ed573;">0.00000100 DOGE</b>!
+      </p>
+
+      <label class="human-check-box" for="humanVerifyCheckbox">
+        <input type="checkbox" id="humanVerifyCheckbox" onchange="onHumanCheckChange()">
+        <span>I am human &amp; ready for short sponsor ad</span>
+      </label>
+
+      <div id="faucetAdBox" style="background: #17120c; border: 1px dashed #dda15e; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
+        <div style="font-size: 12px; color: #ccc; margin-bottom: 6px;">
+          ⏳ Short Ad Timer: <b id="faucetTimer" style="color: #f1c40f; font-size: 15px;">10</b>s
+        </div>
+        <a id="faucetSmartlinkAnchor" href="https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab" target="_blank" rel="noopener noreferrer" class="smartlink-open-btn" style="margin-top: 2px;">
+          🚀 Open Sponsor Ad
+        </a>
+        <div class="modal-ad-banner" id="faucetAdSlot" style="margin-top: 10px;"></div>
+      </div>
+
+      <button id="faucetCollectBtn" class="btn btn-ludo" disabled onclick="collectFaucetReward()">
+        ✅ Claim 0.00000100 DOGE
+      </button>
+      <button class="btn" style="background: #c0392b; margin-top: 8px;" onclick="closeFaucetModal()">Close</button>
     </div>
   </div>
 
@@ -556,6 +608,7 @@
 
     const SMARTLINK_URL = 'https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab';
     document.getElementById('smartlinkAnchor').href = SMARTLINK_URL;
+    document.getElementById('faucetSmartlinkAnchor').href = SMARTLINK_URL;
 
     // ==========================================
     // GAME ECONOMY CONSTANTS (DOGE SATOSHI)
@@ -563,6 +616,8 @@
     const ENTRY_FEE_DOGE = 0.00000100;
     const FULL_WAIT_REWARD_DOGE = 0.00000350;
     const SKIP_BOT_REWARD_DOGE = 0.00000200;
+    const FAUCET_REWARD_DOGE = 0.00000100;
+    const FAUCET_COOLDOWN_MS = 60000;
 
     function createAdIframe() {
       const iframe = document.createElement('iframe');
@@ -695,6 +750,10 @@
     let poolCount = "...";
     let adCountdownInterval = null;
 
+    let faucetTimerInterval = null;
+    let faucetCooldownUntil = 0;
+    let faucetAdReady = false;
+
     let lobbyCountdownInterval = null;
     let lobbyPollInterval = null;
     let activeRoomId = null;
@@ -820,6 +879,105 @@
       } else {
         alert("✅ Successfully added 1 DOGE to Well Queue! Pool: " + poolCount + "/10");
       }
+    }
+
+    // ==========================================
+    // INSTANT MINI FAUCET (HUMAN CHECK + SHORT AD)
+    // ==========================================
+    function clearFaucetTimer() {
+      if (faucetTimerInterval) {
+        clearInterval(faucetTimerInterval);
+        faucetTimerInterval = null;
+      }
+    }
+
+    function closeFaucetModal() {
+      clearFaucetTimer();
+      unmountAdBanner('faucetAdSlot');
+      document.getElementById('faucetModal').style.display = 'none';
+    }
+
+    function openFaucetModal() {
+      if (!currentUser) return openAuthFromWelcome();
+
+      const now = Date.now();
+      if (now < faucetCooldownUntil) {
+        const secsLeft = Math.ceil((faucetCooldownUntil - now) / 1000);
+        return alert(`⏳ Please wait ${secsLeft}s before next faucet claim!`);
+      }
+
+      clearFaucetTimer();
+      faucetAdReady = false;
+      let seconds = 10;
+
+      const checkbox = document.getElementById('humanVerifyCheckbox');
+      const collectBtn = document.getElementById('faucetCollectBtn');
+      const timerEl = document.getElementById('faucetTimer');
+
+      checkbox.checked = false;
+      collectBtn.disabled = true;
+      timerEl.innerText = seconds;
+
+      mountAdBanner('faucetAdSlot');
+      document.getElementById('faucetModal').style.display = 'flex';
+    }
+
+    function onHumanCheckChange() {
+      const checkbox = document.getElementById('humanVerifyCheckbox');
+      const collectBtn = document.getElementById('faucetCollectBtn');
+      const timerEl = document.getElementById('faucetTimer');
+
+      clearFaucetTimer();
+      faucetAdReady = false;
+      collectBtn.disabled = true;
+
+      if (!checkbox.checked) {
+        timerEl.innerText = "10";
+        return;
+      }
+
+      let seconds = 10;
+      timerEl.innerText = seconds;
+
+      faucetTimerInterval = setInterval(() => {
+        if (document.getElementById('faucetModal').style.display !== 'flex') {
+          clearFaucetTimer();
+          return;
+        }
+        seconds--;
+        timerEl.innerText = Math.max(0, seconds);
+
+        if (seconds <= 0) {
+          clearFaucetTimer();
+          faucetAdReady = true;
+          collectBtn.disabled = false;
+        }
+      }, 1000);
+    }
+
+    async function collectFaucetReward() {
+      const checkbox = document.getElementById('humanVerifyCheckbox');
+      if (!checkbox.checked || !faucetAdReady) {
+        return alert("⚠️ Please check human verification and wait for the 10s ad timer!");
+      }
+
+      const collectBtn = document.getElementById('faucetCollectBtn');
+      collectBtn.disabled = true;
+      faucetCooldownUntil = Date.now() + FAUCET_COOLDOWN_MS;
+
+      const { data, error } = await db.rpc('claim_faucet_reward', {
+        p_reward: FAUCET_REWARD_DOGE
+      });
+
+      closeFaucetModal();
+
+      if (error || !data?.success) {
+        return alert("Faucet Error: " + (error?.message || data?.message || "Claim failed"));
+      }
+
+      sfxMove(true);
+      await loadPlayerWallet();
+      alert(`🪙 Faucet Claimed! +${FAUCET_REWARD_DOGE.toFixed(8)} DOGE added to your balance.`);
     }
 
     function clearAdTimer() {
