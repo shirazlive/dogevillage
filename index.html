@@ -264,6 +264,36 @@
       cursor: pointer;
     }
 
+    .captcha-box {
+      display: none;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid #f1c40f;
+      border-radius: 10px;
+      padding: 10px;
+      margin-bottom: 10px;
+    }
+
+    .captcha-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 6px;
+    }
+
+    .captcha-row input {
+      margin: 0;
+      padding: 7px 9px;
+      font-size: 13px;
+      font-weight: bold;
+      text-align: center;
+    }
+
+    .captcha-status {
+      font-size: 11px;
+      margin-top: 5px;
+      min-height: 15px;
+    }
+
     .smartlink-open-btn {
       display: inline-block;
       margin-top: 10px;
@@ -403,7 +433,7 @@
       <h1>🐕 Welcome to Doge Village!</h1>
       <p>
         Join the <b>Doge Well 10x FIFO Pool</b>, play <b>Classic Ludo</b>,
-        and earn DOGE rewards via sponsor ads, mini faucet, or 1 DOGE loans.
+        and earn DOGE rewards via the mini faucet or 1 DOGE loans.
       </p>
 
       <div class="welcome-features">
@@ -416,8 +446,8 @@
           0.00000100 DOGE entry matches.
         </div>
         <div class="feature-box">
-          <b>🪙 Faucet & Ads</b>
-          0.00000100 DOGE faucet + ad rewards.
+          <b>🪙 Faucet & Loan</b>
+          0.00000100 DOGE faucet or 1 DOGE loan.
         </div>
       </div>
 
@@ -458,7 +488,6 @@
       <div class="btn-grid">
         <button class="btn btn-well" onclick="joinWellPool()">🏊 Join Doge Well (1 DOGE)</button>
         <button class="btn btn-faucet" id="faucetClaimBtn" onclick="openFaucetModal()">🪙 Claim Faucet (+0.00000100 DOGE)</button>
-        <button class="btn btn-ad" onclick="watchAd()">📺 Watch Ad (+0.25 DOGE)</button>
         <button class="btn btn-loan" id="loanBtn" onclick="takeLoan()">🏦 Borrow 1 DOGE Loan</button>
         <button class="btn btn-ludo" id="playLudoBtn" onclick="startLudoMatch()">🎲 Play Classic Ludo (0.00000100 DOGE)</button>
         <button class="btn btn-repay" onclick="repayLoanManual()">💳 Repay Loan</button>
@@ -479,7 +508,7 @@
   <div id="authModal" class="modal">
     <div class="modal-content">
       <h3 style="color: #f39c12; margin-bottom: 6px;">🐕 Doge Village Login</h3>
-      <p style="font-size: 11px; color: #ccc; margin-bottom: 10px;">Earn via Faucet & Ads or take 1 DOGE Loan when balance &lt; 1.</p>
+      <p style="font-size: 11px; color: #ccc; margin-bottom: 10px;">Earn via Faucet or take 1 DOGE Loan when balance &lt; 1.</p>
       <input type="email" id="authEmail" placeholder="Enter your email">
       <input type="password" id="authPassword" placeholder="Enter password (min 6 chars)">
       <button class="btn btn-ludo" style="margin-top: 6px;" onclick="loginUser()">Login</button>
@@ -492,13 +521,24 @@
     <div class="modal-content" style="max-width: 380px;">
       <h3 style="color: #f1c40f; margin-bottom: 6px;">🪙 Instant Faucet Claim</h3>
       <p style="font-size: 12px; color: #f5ebd6;">
-        Complete human check &amp; short ad to claim <b style="color: #2ed573;">0.00000100 DOGE</b>!
+        Complete human check, solve captcha &amp; watch short ad to claim <b style="color: #2ed573;">0.00000100 DOGE</b>!
       </p>
 
       <label class="human-check-box" for="humanVerifyCheckbox">
         <input type="checkbox" id="humanVerifyCheckbox" onchange="onHumanCheckChange()">
-        <span>I am human &amp; ready for short sponsor ad</span>
+        <span>I am not a bot (Human Check)</span>
       </label>
+
+      <div id="captchaBox" class="captcha-box">
+        <div style="font-size: 12px; font-weight: bold; color: #f1c40f;">
+          🧩 Solve Captcha: <span id="captchaQuestion">2 + 3 = ?</span>
+        </div>
+        <div class="captcha-row">
+          <input type="number" id="captchaInput" placeholder="Answer" oninput="onCaptchaInputChange()">
+          <button type="button" class="btn btn-sound" style="width: auto; padding: 7px 10px;" onclick="generateNewCaptcha()">↻</button>
+        </div>
+        <div id="captchaStatus" class="captcha-status" style="color: #ccc;">Enter the answer to start ad timer.</div>
+      </div>
 
       <div id="faucetAdBox" style="background: #17120c; border: 1px dashed #dda15e; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
         <div style="font-size: 12px; color: #ccc; margin-bottom: 6px;">
@@ -514,27 +554,6 @@
         ✅ Claim 0.00000100 DOGE
       </button>
       <button class="btn" style="background: #c0392b; margin-top: 8px;" onclick="closeFaucetModal()">Close</button>
-    </div>
-  </div>
-
-  <div id="adModal" class="modal">
-    <div class="modal-content" style="max-width: 380px;">
-      <h3 style="color: #f39c12;">📺 Sponsor Ad Reward</h3>
-      <p style="font-size: 13px; color: #ccc; margin: 10px 0;">
-        Please wait <b id="adTimer" style="color: #f1c40f; font-size: 16px;">15</b> seconds to claim <b style="color: #2ed573;">0.25 DOGE</b>!
-      </p>
-
-      <div id="adSlotContainer" style="width: 300px; min-height: 250px; margin: 10px auto; background: #17120c; border-radius: 10px; border: 1px dashed #dda15e; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px;">
-        <div style="font-size: 12px; color: #f5ebd6; line-height: 1.5;">
-          🔗 Sponsor Smartlink Ready!<br>
-          <span style="font-size: 11px; color: #ccc;">Open the sponsor page and stay until timer hits 0.</span>
-        </div>
-        <a id="smartlinkAnchor" href="https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab" target="_blank" rel="noopener noreferrer" class="smartlink-open-btn">
-          🚀 Open Sponsor Ad
-        </a>
-      </div>
-
-      <button class="btn" style="background: #c0392b; margin-top: 10px;" onclick="cancelAdModal()">Cancel / Close</button>
     </div>
   </div>
 
@@ -607,7 +626,6 @@
     const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const SMARTLINK_URL = 'https://araplhn.org/4/877b87b546211fba747f1830dc8e1fab';
-    document.getElementById('smartlinkAnchor').href = SMARTLINK_URL;
     document.getElementById('faucetSmartlinkAnchor').href = SMARTLINK_URL;
 
     // ==========================================
@@ -748,11 +766,12 @@
     let currentUser = null;
     let playerData = { playable_balance: 0, loan_debt: 0 };
     let poolCount = "...";
-    let adCountdownInterval = null;
 
     let faucetTimerInterval = null;
     let faucetCooldownUntil = 0;
     let faucetAdReady = false;
+    let expectedCaptchaAnswer = null;
+    let captchaSolvedForSession = false;
 
     let lobbyCountdownInterval = null;
     let lobbyPollInterval = null;
@@ -882,7 +901,7 @@
     }
 
     // ==========================================
-    // INSTANT MINI FAUCET (HUMAN CHECK + SHORT AD)
+    // INSTANT MINI FAUCET (HUMAN CHECK + CAPTCHA + SHORT AD)
     // ==========================================
     function clearFaucetTimer() {
       if (faucetTimerInterval) {
@@ -897,47 +916,33 @@
       document.getElementById('faucetModal').style.display = 'none';
     }
 
-    function openFaucetModal() {
-      if (!currentUser) return openAuthFromWelcome();
-
-      const now = Date.now();
-      if (now < faucetCooldownUntil) {
-        const secsLeft = Math.ceil((faucetCooldownUntil - now) / 1000);
-        return alert(`⏳ Please wait ${secsLeft}s before next faucet claim!`);
-      }
-
-      clearFaucetTimer();
+    function generateNewCaptcha() {
+      const a = Math.floor(Math.random() * 8) + 1;
+      const b = Math.floor(Math.random() * 8) + 1;
+      expectedCaptchaAnswer = a + b;
+      captchaSolvedForSession = false;
       faucetAdReady = false;
-      let seconds = 10;
+      clearFaucetTimer();
 
-      const checkbox = document.getElementById('humanVerifyCheckbox');
-      const collectBtn = document.getElementById('faucetCollectBtn');
-      const timerEl = document.getElementById('faucetTimer');
-
-      checkbox.checked = false;
-      collectBtn.disabled = true;
-      timerEl.innerText = seconds;
-
-      mountAdBanner('faucetAdSlot');
-      document.getElementById('faucetModal').style.display = 'flex';
+      document.getElementById('captchaQuestion').innerText = `${a} + ${b} = ?`;
+      const inputEl = document.getElementById('captchaInput');
+      inputEl.value = '';
+      inputEl.disabled = false;
+      document.getElementById('faucetTimer').innerText = '10';
+      document.getElementById('faucetCollectBtn').disabled = true;
+      const statusEl = document.getElementById('captchaStatus');
+      statusEl.style.color = '#ccc';
+      statusEl.innerText = 'Enter the answer to start ad timer.';
     }
 
-    function onHumanCheckChange() {
-      const checkbox = document.getElementById('humanVerifyCheckbox');
-      const collectBtn = document.getElementById('faucetCollectBtn');
-      const timerEl = document.getElementById('faucetTimer');
-
+    function startFaucetAdCountdown() {
       clearFaucetTimer();
       faucetAdReady = false;
-      collectBtn.disabled = true;
-
-      if (!checkbox.checked) {
-        timerEl.innerText = "10";
-        return;
-      }
-
       let seconds = 10;
+      const timerEl = document.getElementById('faucetTimer');
+      const collectBtn = document.getElementById('faucetCollectBtn');
       timerEl.innerText = seconds;
+      collectBtn.disabled = true;
 
       faucetTimerInterval = setInterval(() => {
         if (document.getElementById('faucetModal').style.display !== 'flex') {
@@ -955,10 +960,75 @@
       }, 1000);
     }
 
+    function openFaucetModal() {
+      if (!currentUser) return openAuthFromWelcome();
+
+      const now = Date.now();
+      if (now < faucetCooldownUntil) {
+        const secsLeft = Math.ceil((faucetCooldownUntil - now) / 1000);
+        return alert(`⏳ Please wait ${secsLeft}s before next faucet claim!`);
+      }
+
+      clearFaucetTimer();
+      faucetAdReady = false;
+      captchaSolvedForSession = false;
+
+      const checkbox = document.getElementById('humanVerifyCheckbox');
+      const captchaBox = document.getElementById('captchaBox');
+      const collectBtn = document.getElementById('faucetCollectBtn');
+      const timerEl = document.getElementById('faucetTimer');
+
+      checkbox.checked = false;
+      captchaBox.style.display = 'none';
+      collectBtn.disabled = true;
+      timerEl.innerText = '10';
+
+      mountAdBanner('faucetAdSlot');
+      document.getElementById('faucetModal').style.display = 'flex';
+    }
+
+    function onHumanCheckChange() {
+      const checkbox = document.getElementById('humanVerifyCheckbox');
+      const captchaBox = document.getElementById('captchaBox');
+      const collectBtn = document.getElementById('faucetCollectBtn');
+      const timerEl = document.getElementById('faucetTimer');
+
+      clearFaucetTimer();
+      faucetAdReady = false;
+      captchaSolvedForSession = false;
+      collectBtn.disabled = true;
+      timerEl.innerText = '10';
+
+      if (!checkbox.checked) {
+        captchaBox.style.display = 'none';
+        return;
+      }
+
+      captchaBox.style.display = 'block';
+      generateNewCaptcha();
+    }
+
+    function onCaptchaInputChange() {
+      if (captchaSolvedForSession) return;
+      const val = Number(document.getElementById('captchaInput').value);
+      const statusEl = document.getElementById('captchaStatus');
+
+      if (val === expectedCaptchaAnswer) {
+        captchaSolvedForSession = true;
+        document.getElementById('captchaInput').disabled = true;
+        statusEl.style.color = '#2ed573';
+        statusEl.innerText = '✅ Captcha verified! Short ad timer started.';
+        startFaucetAdCountdown();
+      } else {
+        statusEl.style.color = '#ffeaa7';
+        statusEl.innerText = 'Enter the correct sum to start ad timer.';
+      }
+    }
+
     async function collectFaucetReward() {
       const checkbox = document.getElementById('humanVerifyCheckbox');
-      if (!checkbox.checked || !faucetAdReady) {
-        return alert("⚠️ Please check human verification and wait for the 10s ad timer!");
+      if (!checkbox.checked || !captchaSolvedForSession || !faucetAdReady) {
+        return alert("⚠️ Please complete human check, solve captcha, and wait for the 10s ad timer!");
       }
 
       const collectBtn = document.getElementById('faucetCollectBtn');
@@ -978,47 +1048,6 @@
       sfxMove(true);
       await loadPlayerWallet();
       alert(`🪙 Faucet Claimed! +${FAUCET_REWARD_DOGE.toFixed(8)} DOGE added to your balance.`);
-    }
-
-    function clearAdTimer() {
-      if (adCountdownInterval) {
-        clearInterval(adCountdownInterval);
-        adCountdownInterval = null;
-      }
-    }
-
-    function cancelAdModal() {
-      clearAdTimer();
-      document.getElementById('adModal').style.display = 'none';
-    }
-
-    function watchAd() {
-      if (!currentUser) return openAuthFromWelcome();
-      clearAdTimer();
-
-      const modal = document.getElementById('adModal');
-      const timerEl = document.getElementById('adTimer');
-      let seconds = 15;
-      timerEl.innerText = seconds;
-      modal.style.display = 'flex';
-
-      adCountdownInterval = setInterval(async () => {
-        if (document.getElementById('adModal').style.display !== 'flex') {
-          clearAdTimer();
-          return;
-        }
-        seconds--;
-        timerEl.innerText = seconds;
-
-        if (seconds <= 0) {
-          clearAdTimer();
-          modal.style.display = 'none';
-          const { data, error } = await db.rpc('claim_ad_reward', { p_reward: 0.25 });
-          if (error) return alert(error.message);
-          alert(`📺 Ad Reward Claimed!\nPaid toward Loan: ${data.debt_paid} DOGE\nAdded to Balance: ${data.added_to_balance} DOGE`);
-          await loadPlayerWallet();
-        }
-      }, 1000);
     }
 
     async function takeLoan() {
